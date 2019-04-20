@@ -195,6 +195,10 @@ void launchGameThread(
     execv(arg_vect[0], &arg_vect[0]);
 }
 
+GameLoop::GameLoop(Context* c) : context(c), keysyms(xcb_key_symbols_alloc(c->conn), xcb_key_symbols_free) {
+    movie = MovieFile(context);
+}
+
 void GameLoop::start()
 {
     init();
