@@ -4,11 +4,17 @@
 %}
 
 %{
+#include "../shared/messages.h"
+#include "../shared/sockethelpers.h"
 #include "../shared/SharedConfig.h"
 #include "GameLoop.h"
 %}
 
 %include "std_string.i"
+%include "typemaps.i"
+%include "../shared/messages.h"
+
+%include "../shared/sockethelpers.h"
 
 void launchGameThread(
     const std::string& gamepath,
