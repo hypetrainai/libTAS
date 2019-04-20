@@ -51,6 +51,9 @@ void sendMessage(int message);
 /* Receive data from the socket. Same arguments as sendData() */
 int receiveData(void* elem, size_t size);
 
+/* Receive an int */
+int receiveInt(int* elem);
+
 /* Receive a message */
 int receiveMessage();
 

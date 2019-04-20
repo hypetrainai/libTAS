@@ -123,10 +123,15 @@ int receiveData(void* elem, size_t size)
     return recv(socket_fd, elem, size, 0);
 }
 
+int receiveInt(int* elem)
+{
+    return receiveData((void*)elem, sizeof(int));
+}
+
 int receiveMessage()
 {
     int msg;
-    int ret = receiveData(&msg, sizeof(int));
+    int ret = receiveInt(&msg);
     if (ret < 0)
         return ret;
     return msg;

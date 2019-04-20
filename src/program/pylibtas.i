@@ -14,6 +14,8 @@
 %include "typemaps.i"
 %include "../shared/messages.h"
 
+%ignore receiveData;
+%apply int* OUTPUT { int* elem };
 %include "../shared/sockethelpers.h"
 
 void launchGameThread(
