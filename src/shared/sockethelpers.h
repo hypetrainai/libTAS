@@ -22,6 +22,7 @@
 
 #include <cstddef>
 #include <string>
+#include "SharedConfig.h"
 
 /* Remove the socker file */
 void removeSocket();
@@ -39,6 +40,8 @@ void closeSocket(void);
  * pointer elem, and has the specified size in bytes.
  */
 void sendData(const void* elem, size_t size);
+
+void sendSharedConfig(const SharedConfig* elem);
 
 /* Send a string object through the socket. It first sends the string length,
  * followed by the char array.

@@ -106,6 +106,11 @@ void sendData(const void* elem, size_t size)
     send(socket_fd, elem, size, 0);
 }
 
+void sendSharedConfig(const SharedConfig* elem)
+{
+    sendData(elem, sizeof(SharedConfig));
+}
+
 void sendMessage(int message)
 {
     sendData(&message, sizeof(int));
