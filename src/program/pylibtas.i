@@ -55,6 +55,7 @@
 
 %ignore receiveData;
 %apply int* OUTPUT { int* elem };
+%typemap(in) void*  %{ $1 = (void*)$input; %} 
 %include "../shared/sockethelpers.h"
 
 void launchGameThread(

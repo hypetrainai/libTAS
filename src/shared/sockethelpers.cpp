@@ -130,6 +130,12 @@ int receiveData(void* elem, size_t size)
     return recv(socket_fd, elem, size, 0);
 }
 
+int ignoreData(size_t size)
+{
+    char buffer[size];
+    return receiveData(buffer, size);
+}
+
 int receiveInt(int* elem)
 {
     return receiveData((void*)elem, sizeof(int));
