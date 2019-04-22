@@ -1,7 +1,4 @@
 %module pylibtas
-%begin %{
-#define SWIG_PYTHON_STRICT_BYTE_CHAR
-%}
 
 %{
 #include "../shared/messages.h"
