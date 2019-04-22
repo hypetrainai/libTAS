@@ -1,6 +1,7 @@
 %module pylibtas
 
 %{
+#include "../shared/AllInputs.h"
 #include "../shared/messages.h"
 #include "../shared/SharedConfig.h"
 #include "../shared/sockethelpers.h"
@@ -47,8 +48,10 @@
 
 %include "std_string.i"
 %include "typemaps.i"
+%include "../shared/AllInputs.h"
 %include "../shared/messages.h"
 %include "../shared/SharedConfig.h"
+%include "../shared/SingleInput.h"
 
 %ignore receiveData;
 %apply int* OUTPUT { int* elem };
