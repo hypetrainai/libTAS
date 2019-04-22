@@ -113,6 +113,11 @@ void sendSharedConfig(const SharedConfig* elem)
     sendData(elem, sizeof(SharedConfig));
 }
 
+void sendAllInputs(const AllInputs* elem)
+{
+    sendData(elem, sizeof(AllInputs));
+}
+
 void sendMessage(int message)
 {
     // printf("(%ld) Send %s\n", std::this_thread::get_id(), MESSAGE_NAMES[message].c_str());

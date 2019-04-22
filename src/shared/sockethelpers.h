@@ -22,6 +22,7 @@
 
 #include <cstddef>
 #include <string>
+#include "AllInputs.h"
 #include "SharedConfig.h"
 
 /* Remove the socker file */
@@ -42,6 +43,8 @@ void closeSocket(void);
 void sendData(const void* elem, size_t size);
 
 void sendSharedConfig(const SharedConfig* elem);
+
+void sendAllInputs(const AllInputs* elem);
 
 /* Send a string object through the socket. It first sends the string length,
  * followed by the char array.
