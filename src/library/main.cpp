@@ -83,6 +83,7 @@ void __attribute__((constructor)) init(void)
             case MSGN_CONFIG:
                 debuglog(LCF_SOCKET, "Receiving config");
                 receiveData(&shared_config, sizeof(SharedConfig));
+                std::cerr << "Received SharedConfig" << shared_config << std::endl;
                 break;
             case MSGN_DUMP_FILE:
                 debuglog(LCF_SOCKET, "Receiving dump filename");

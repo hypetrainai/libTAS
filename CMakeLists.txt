@@ -153,6 +153,7 @@ set(LIBRARY_SOURCES
 
 set(SHARED_SOURCES
     src/shared/AllInputs.cpp
+    src/shared/SharedConfig.cpp
     src/shared/SingleInput.cpp
     src/shared/sockethelpers.cpp
 )
@@ -175,21 +176,21 @@ include_directories(src/program)
 
 set_property(SOURCE src/program/pylibtas.i PROPERTY CPLUSPLUS ON)
 set_property(SOURCE pylibtas.i PROPERTY SWIG_MODULE_NAME pylibtas)
-swig_add_library(pylibtas LANGUAGE python OUTPUT_DIR ../.. OUTFILE_DIR . SOURCES src/program/pylibtas.i)
+swig_add_library(pylibtas TYPE SHARED LANGUAGE python OUTPUT_DIR ../.. OUTFILE_DIR . SOURCES src/program/pylibtas.i)
 set_target_properties(${SWIG_MODULE_pylibtas_REAL_NAME} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ../..)
-add_library(libTAS_lib STATIC ${PROGRAM_SOURCES} ${SHARED_SOURCES})
+add_library(tas_core STATIC ${PROGRAM_SOURCES} ${SHARED_SOURCES})
 add_executable(libTAS src/program/main.cpp)
-target_link_libraries(libTAS libTAS_lib)
-swig_link_libraries(pylibtas libTAS_lib)
+target_link_libraries(libTAS tas_core)
+swig_link_libraries(pylibtas tas_core)
 add_library(tas SHARED ${LIBRARY_SOURCES} ${SHARED_SOURCES})
 
 # Add some c++ requirements
 target_compile_features(tas PRIVATE cxx_auto_type cxx_nullptr cxx_range_for cxx_variadic_templates)
-target_compile_features(libTAS_lib PRIVATE cxx_auto_type cxx_range_for)
+target_compile_features(tas_core PRIVATE cxx_auto_type cxx_range_for)
 
 # Common debug flags
 target_compile_options(tas PUBLIC -fvisibility=hidden)
-target_compile_options(libTAS_lib PUBLIC -Wno-float-equal)
+target_compile_options(tas_core PUBLIC -Wno-float-equal)
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}  -Wall -Wextra -Wmissing-include-dirs -Wmissing-declarations -Wfloat-equal -Wundef -Wcast-align -Winit-self -Wshadow -Wno-unused-parameter -Wno-missing-field-initializers")
 
 # Set optimization flags for release
@@ -205,11 +206,11 @@ if (Qt5Widgets_FOUND)
 else()
     message(SEND_ERROR "The Qt5Widgets library could not be found!")
 endif(Qt5Widgets_FOUND)
-target_link_libraries(libTAS_lib Qt5::Widgets)
+target_link_libraries(tas_core Qt5::Widgets)
 
 # Add pthread
 find_package(Threads REQUIRED)
-target_link_libraries(libTAS_lib Threads::Threads)
+target_link_libraries(tas_core Threads::Threads)
 target_link_libraries(tas Threads::Threads)
 
 # Add XCB libraries
@@ -218,7 +219,7 @@ set(CMAKE_MODULE_PATH ${ECM_MODULE_PATH} ${CMAKE_MODULE_PATH})
 
 find_package(XCB COMPONENTS XCB KEYSYMS XKB CURSOR REQUIRED)
 include_directories(${XCB_INCLUDE_DIRS})
-target_link_libraries(libTAS_lib ${XCB_LIBRARIES})
+target_link_libraries(tas_core ${XCB_LIBRARIES})
 
 # Add X11_XCB library
 find_package(X11_XCB REQUIRED)
@@ -228,7 +229,7 @@ target_link_libraries(tas ${X11_XCB_LIBRARIES})
 # Add X11 library
 find_package(X11 REQUIRED)
 include_directories(${X11_X11_INCLUDE_DIRS})
-target_link_libraries(libTAS_lib ${X11_X11_LIB})
+target_link_libraries(tas_core ${X11_X11_LIB})
 target_link_libraries(tas ${X11_X11_LIB})
 
 # Add xf86vidmode wrapper if the extension is present

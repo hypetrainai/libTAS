@@ -22,6 +22,7 @@
 
 #include "lcf.h"
 #include <time.h>
+#include <ostream>
 
 struct SharedConfig {
     /* Is the game running or on pause */
@@ -239,5 +240,7 @@ struct SharedConfig {
     int wait_timeout = WAIT_NATIVE;
 
 };
+
+std::ostream& operator<<(std::ostream& os, const SharedConfig& sc);
 
 #endif

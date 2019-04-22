@@ -115,7 +115,7 @@ void sendSharedConfig(const SharedConfig* elem)
 
 void sendMessage(int message)
 {
-    printf("(%ld) Send %s\n", std::this_thread::get_id(), MESSAGE_NAMES[message].c_str());
+    // printf("(%ld) Send %s\n", std::this_thread::get_id(), MESSAGE_NAMES[message].c_str());
     sendData(&message, sizeof(int));
 }
 
@@ -148,7 +148,7 @@ int receiveMessage()
     int ret = receiveInt(&msg);
     if (ret < 0)
         return ret;
-    printf("(%ld) Recv %s\n", std::this_thread::get_id(), MESSAGE_NAMES[msg].c_str());
+    // printf("(%ld) Recv %s\n", std::this_thread::get_id(), MESSAGE_NAMES[msg].c_str());
     return msg;
 }
 
