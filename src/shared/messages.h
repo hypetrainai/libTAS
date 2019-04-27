@@ -27,12 +27,11 @@ enum {
      * Argument: none
      */
     MSGB_START_FRAMEBOUNDARY,
-    
+
     /*
-     * The game sends frame data to the program
-     * Argument: none
+     * The game sends frame data to the program.
+     * Argument: int size, size in chunks of 256kb.
      */
-     
     MSGB_FRAME_DATA,
 
     /*
@@ -231,6 +230,7 @@ enum {
 
 const std::string MESSAGE_NAMES[] {
     "MSGB_START_FRAMEBOUNDARY",
+    "MSGB_FRAME_DATA",
     "MSGN_START_FRAMEBOUNDARY",
     "MSGB_FRAMECOUNT_TIME",
     "MSGN_ALL_INPUTS",

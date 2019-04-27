@@ -212,6 +212,19 @@ void GameLoop::start()
             return;
         }
 
+        int message = receiveMessage();
+        if (message == MSGB_FRAME_DATA) {
+          int size;
+          receiveData(&size, sizeof(int));
+          for (int i = 0; i < size; i += 256*1024) {
+            ignoreData(std::min(size - i, 256*1024));
+          }
+        } else {
+          std::cerr << "Unexpected message " << MESSAGE_NAMES[message] << std::endl;
+          loopExit();
+          return;
+        }
+
         emit startFrameBoundary();
 
         /* We are at a frame boundary */
