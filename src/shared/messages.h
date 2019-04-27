@@ -27,6 +27,13 @@ enum {
      * Argument: none
      */
     MSGB_START_FRAMEBOUNDARY,
+    
+    /*
+     * The game sends frame data to the program
+     * Argument: none
+     */
+     
+    MSGB_FRAME_DATA,
 
     /*
      * The program sent all messages at the beginning of the frame boundary.

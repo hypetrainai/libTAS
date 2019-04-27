@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.1)
 
 project(libtas)
 
+list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Modules)
+
 set(PROGRAM_SOURCES
     src/program/AutoSave.cpp
     src/program/Config.cpp
@@ -163,6 +165,11 @@ include(UseSWIG)
 
 FIND_PACKAGE(PythonLibs 3)
 INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH})
+
+FIND_PACKAGE(PythonInterp 3)
+
+FIND_PACKAGE(NumPy REQUIRED)
+INCLUDE_DIRECTORIES(${NUMPY_INCLUDE_DIR})
 
 SET(CMAKE_SWIG_FLAGS "-py3")
 

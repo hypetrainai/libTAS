@@ -5,7 +5,9 @@
 #include "../shared/messages.h"
 #include "../shared/SharedConfig.h"
 #include "../shared/sockethelpers.h"
+
 #include "GameLoop.h"
+#define SWIG_FILE_WITH_INIT
 %}
 
 %typemap(in) int [ANY] (int temp[$1_dim0]) {
@@ -47,6 +49,12 @@
 }
 
 %include "std_string.i"
+%include "numpy.i"
+
+%init %{
+import_array();
+%}
+
 %include "typemaps.i"
 %include "../shared/AllInputs.h"
 %include "../shared/messages.h"
@@ -55,6 +63,7 @@
 
 %ignore receiveData;
 %apply int* OUTPUT { int* elem };
+%apply (unsigned char* ARGOUT_ARRAY1, int DIM1) { (unsigned char* elem, int size) };
 %typemap(in) void*  %{ $1 = (void*)$input; %} 
 %include "../shared/sockethelpers.h"
 

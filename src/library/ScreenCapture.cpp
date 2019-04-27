@@ -87,7 +87,7 @@ static std::vector<uint8_t> winpixels;
 
 /* Video dimensions */
 static int width, height, pitch;
-static unsigned int size;
+
 static int pixelSize;
 
 /* OpenGL framebuffer */
