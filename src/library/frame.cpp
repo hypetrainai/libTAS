@@ -252,15 +252,13 @@ void frameBoundary(bool drawFB, std::function<void()> draw, bool restore_screen)
     /* Last message to send */
     sendMessage(MSGB_START_FRAMEBOUNDARY);
 
-
     uint8_t *current_frame;
-    int size = ScreenCapture::getPixels(&current_frame, False);
-    ScreenCapture::getPixels(&current_frame, False);
+    int size = ScreenCapture::getPixels(&current_frame, true);
 
     sendMessage(MSGB_FRAME_DATA);
     sendData(&size, sizeof(int));
-    for (int i=0; i < size; i += 256*1024) {
-      sendData(&current_frame + i, std::min(size - i, 256*1024));
+    for (int i = 0; i < size; i += 8*1024) {
+      sendData(current_frame + i, std::min(size - i, 8*1024));
     }
 
 #ifdef LIBTAS_ENABLE_HUD

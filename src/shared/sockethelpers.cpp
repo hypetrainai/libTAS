@@ -105,6 +105,7 @@ void closeSocket(void)
 
 void sendData(const void* elem, size_t size)
 {
+    // printf("(%ld) Send %d\n", std::this_thread::get_id(), size);
     send(socket_fd, elem, size, 0);
 }
 
@@ -133,7 +134,8 @@ void sendString(const std::string& str)
 
 int receiveData(void* elem, size_t size)
 {
-    return recv(socket_fd, elem, size, 0);
+    // printf("(%ld) Receive %d\n", std::this_thread::get_id(), size);
+    return recv(socket_fd, elem, size, MSG_WAITALL);
 }
 
 int ignoreData(size_t size)

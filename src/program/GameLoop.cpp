@@ -216,9 +216,7 @@ void GameLoop::start()
         if (message == MSGB_FRAME_DATA) {
           int size;
           receiveData(&size, sizeof(int));
-          for (int i = 0; i < size; i += 256*1024) {
-            ignoreData(std::min(size - i, 256*1024));
-          }
+          ignoreData(size);
         } else {
           std::cerr << "Unexpected message " << MESSAGE_NAMES[message] << std::endl;
           loopExit();

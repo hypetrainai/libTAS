@@ -30,7 +30,7 @@ enum {
 
     /*
      * The game sends frame data to the program.
-     * Argument: int size, size in chunks of 256kb.
+     * Argument: int size, size in chunks of 8kb.
      */
     MSGB_FRAME_DATA,
 
