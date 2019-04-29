@@ -252,10 +252,14 @@ void frameBoundary(bool drawFB, std::function<void()> draw, bool restore_screen)
     /* Last message to send */
     sendMessage(MSGB_START_FRAMEBOUNDARY);
 
+    sendMessage(MSGB_FRAME_DATA);
+    int window_w, window_h;
+    ScreenCapture::getDimensions(window_w, window_h);
+    sendData(&window_w, sizeof(int));
+    sendData(&window_h, sizeof(int));
+
     uint8_t *current_frame;
     int size = ScreenCapture::getPixels(&current_frame, true);
-
-    sendMessage(MSGB_FRAME_DATA);
     sendData(&size, sizeof(int));
     for (int i = 0; i < size; i += 8*1024) {
       sendData(current_frame + i, std::min(size - i, 8*1024));

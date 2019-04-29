@@ -152,7 +152,7 @@ int receiveInt(int* elem)
 int receiveArray(unsigned char* elem, int size)
 {
     int x = receiveData((void*)elem, size);
-    
+
     return x;
 }
 

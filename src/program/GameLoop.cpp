@@ -215,6 +215,8 @@ void GameLoop::start()
         int message = receiveMessage();
         if (message == MSGB_FRAME_DATA) {
           int size;
+          ignoreData(sizeof(int));
+          ignoreData(sizeof(int));
           receiveData(&size, sizeof(int));
           ignoreData(size);
         } else {
