@@ -57,6 +57,7 @@ import_array();
 
 %include "typemaps.i"
 %include "../shared/AllInputs.h"
+%include "../shared/lcf.h"
 %include "../shared/messages.h"
 %include "../shared/SharedConfig.h"
 %include "../shared/SingleInput.h"
