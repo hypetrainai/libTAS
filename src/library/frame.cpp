@@ -567,6 +567,7 @@ static void receive_messages(std::function<void()> draw)
                  * we look at variable ThreadManager::restoreInProgress.
                  */
                 if (ThreadManager::restoreInProgress) {
+                    debuglog(LCF_CHECKPOINT, "Sending loading succeeded.");
                     /* Tell the program that the loading succeeded */
                     sendMessage(MSGB_LOADING_SUCCEEDED);
 
