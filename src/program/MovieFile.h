@@ -70,7 +70,7 @@ public:
     /* Annotations to be saved inside the movie file */
     std::string annotations;
 
-    MovieFile() {};
+    MovieFile();
 
     /* Prepare a movie file from the context */
     MovieFile(Context* c);

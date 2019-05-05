@@ -7,6 +7,7 @@
 #include "../shared/sockethelpers.h"
 
 #include "GameLoop.h"
+#include "MovieFile.h"
 #define SWIG_FILE_WITH_INIT
 %}
 
@@ -67,6 +68,8 @@ import_array();
 %apply (unsigned char* ARGOUT_ARRAY1, int DIM1) { (unsigned char* elem, int size) };
 %typemap(in) void*  %{ $1 = (void*)$input; %} 
 %include "../shared/sockethelpers.h"
+
+%include "MovieFile.h"
 
 void launchGameThread(
     const std::string& gamepath,

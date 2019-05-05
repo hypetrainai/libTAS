@@ -30,6 +30,11 @@
 #include "utils.h"
 #include "../shared/version.h"
 
+MovieFile::MovieFile() : modifiedSinceLastSave(false), modifiedSinceLastAutoSave(false), modifiedSinceLastStateLoad(false) {
+  context = new Context();
+  context->config.tempmoviedir = "/tmp/celeste_movies";
+}
+
 MovieFile::MovieFile(Context* c) : modifiedSinceLastSave(false), modifiedSinceLastAutoSave(false), modifiedSinceLastStateLoad(false), context(c) {}
 
 const char* MovieFile::errorString(int error_code) {
