@@ -149,6 +149,11 @@ int receiveInt(int* elem)
     return receiveData((void*)elem, sizeof(int));
 }
 
+int receiveULong(unsigned long* elem)
+{
+    return receiveData((void*)elem, sizeof(unsigned long));
+}
+
 int receiveArray(unsigned char* elem, int size)
 {
     int x = receiveData((void*)elem, size);

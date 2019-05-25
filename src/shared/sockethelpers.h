@@ -66,6 +66,8 @@ int ignoreData(size_t size);
 /* Receive an int */
 int receiveInt(int* elem);
 
+/* Receive a ulong */
+int receiveULong(unsigned long* elem);
 
 /* Receive a message */
 int receiveMessage();
