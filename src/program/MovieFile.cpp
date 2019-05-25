@@ -32,7 +32,7 @@
 
 MovieFile::MovieFile() : modifiedSinceLastSave(false), modifiedSinceLastAutoSave(false), modifiedSinceLastStateLoad(false) {
   context = new Context();
-  context->config.tempmoviedir = "/tmp/celeste_movies";
+  context->config.tempmoviedir = "/tmp/celeste/movies";
 }
 
 MovieFile::MovieFile(Context* c) : modifiedSinceLastSave(false), modifiedSinceLastAutoSave(false), modifiedSinceLastStateLoad(false), context(c) {}
