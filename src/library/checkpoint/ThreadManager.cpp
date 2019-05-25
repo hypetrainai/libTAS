@@ -348,7 +348,7 @@ void ThreadManager::deallocateThreads()
     MYASSERT(pthread_mutex_unlock(&threadListLock) == 0)
 }
 
-void ThreadManager::checkpoint()
+bool ThreadManager::checkpoint()
 {
     MYASSERT(current_thread->state == ThreadInfo::ST_CKPNTHREAD)
 
@@ -364,7 +364,7 @@ void ThreadManager::checkpoint()
     /* Perform a series of checks before attempting to checkpoint */
     if (!Checkpoint::checkCheckpoint()) {
         ThreadSync::releaseLocks();
-        return;
+        return false;
     }
 
     /* Before suspending threads, we must also register our signal handlers */
@@ -414,6 +414,8 @@ void ThreadManager::checkpoint()
     debuglog(LCF_THREAD | LCF_CHECKPOINT, "Resuming main thread");
 
     ThreadSync::releaseLocks();
+
+    return true;
 }
 
 void ThreadManager::restore()
