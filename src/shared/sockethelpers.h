@@ -42,6 +42,8 @@ void closeSocket(void);
  */
 void sendData(const void* elem, size_t size);
 
+void sendInt(int elem);
+
 void sendSharedConfig(const SharedConfig* elem);
 
 void sendAllInputs(const AllInputs* elem);

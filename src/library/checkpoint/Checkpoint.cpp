@@ -91,6 +91,7 @@ void Checkpoint::setBaseSavestatePath(std::string path)
 
 void Checkpoint::setSavestateIndex(int index)
 {
+    debuglogstdio(LCF_CHECKPOINT, "Setting savestate index to %d", index);
     ss_index = index;
 }
 
@@ -989,7 +990,7 @@ static size_t writeAllAreas(bool base)
     }
 
     if (spmfd != -1) {
-        NATIVECALL(close(spmfd));        
+        NATIVECALL(close(spmfd));
     }
 
     /* Closing the savestate files */
@@ -1034,7 +1035,7 @@ static size_t writeAnArea(int pmfd, int pfd, int spmfd, Area &area, SaveState &p
 
     if (spmfd != -1) {
         /* Seek at the beginning of the area pagemap */
-        MYASSERT(-1 != lseek(spmfd, static_cast<off_t>(reinterpret_cast<uintptr_t>(area.addr) / (4096/8)), SEEK_SET));        
+        MYASSERT(-1 != lseek(spmfd, static_cast<off_t>(reinterpret_cast<uintptr_t>(area.addr) / (4096/8)), SEEK_SET));
     }
 
     /* Number of pages in the area */

@@ -63,10 +63,10 @@ import_array();
 %include "../shared/SharedConfig.h"
 %include "../shared/SingleInput.h"
 
+%ignore sendData;
 %ignore receiveData;
 %apply int* OUTPUT { int* elem };
 %apply (unsigned char* ARGOUT_ARRAY1, int DIM1) { (unsigned char* elem, int size) };
-%typemap(in) void*  %{ $1 = (void*)$input; %} 
 %include "../shared/sockethelpers.h"
 
 %include "MovieFile.h"
