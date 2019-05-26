@@ -63,9 +63,9 @@ import_array();
 %include "../shared/SharedConfig.h"
 %include "../shared/SingleInput.h"
 
-%ignore sendData;
 %ignore receiveData;
 %apply int* OUTPUT { int* elem };
+%apply unsigned long* OUTPUT { unsigned long* elem };
 %apply (unsigned char* ARGOUT_ARRAY1, int DIM1) { (unsigned char* elem, int size) };
 %include "../shared/sockethelpers.h"
 
