@@ -96,6 +96,16 @@ void KeyMapping::init(xcb_connection_t* conn)
     hotkey_list.push_back({{SingleInput::IT_KEYBOARD, XK_F8}, HOTKEY_LOADSTATE8, "Load State 8"});
     hotkey_list.push_back({{SingleInput::IT_KEYBOARD, XK_F9}, HOTKEY_LOADSTATE9, "Load State 9"});
     hotkey_list.push_back({{SingleInput::IT_KEYBOARD, XK_F10}, HOTKEY_LOADSTATE_BACKTRACK, "Load Backtrack State"});
+    hotkey_list.push_back({{SingleInput::IT_KEYBOARD, XK_F1 | XK_Alt_L_Flag}, HOTKEY_LOADBRANCH1, "Load Branch 1"});
+    hotkey_list.push_back({{SingleInput::IT_KEYBOARD, XK_F2 | XK_Alt_L_Flag}, HOTKEY_LOADBRANCH2, "Load Branch 2"});
+    hotkey_list.push_back({{SingleInput::IT_KEYBOARD, XK_F3 | XK_Alt_L_Flag}, HOTKEY_LOADBRANCH3, "Load Branch 3"});
+    hotkey_list.push_back({{SingleInput::IT_KEYBOARD, XK_F4 | XK_Alt_L_Flag}, HOTKEY_LOADBRANCH4, "Load Branch 4"});
+    hotkey_list.push_back({{SingleInput::IT_KEYBOARD, XK_F5 | XK_Alt_L_Flag}, HOTKEY_LOADBRANCH5, "Load Branch 5"});
+    hotkey_list.push_back({{SingleInput::IT_KEYBOARD, XK_F6 | XK_Alt_L_Flag}, HOTKEY_LOADBRANCH6, "Load Branch 6"});
+    hotkey_list.push_back({{SingleInput::IT_KEYBOARD, XK_F7 | XK_Alt_L_Flag}, HOTKEY_LOADBRANCH7, "Load Branch 7"});
+    hotkey_list.push_back({{SingleInput::IT_KEYBOARD, XK_F8 | XK_Alt_L_Flag}, HOTKEY_LOADBRANCH8, "Load Branch 8"});
+    hotkey_list.push_back({{SingleInput::IT_KEYBOARD, XK_F9 | XK_Alt_L_Flag}, HOTKEY_LOADBRANCH9, "Load Branch 9"});
+    hotkey_list.push_back({{SingleInput::IT_KEYBOARD, XK_F10 | XK_Alt_L_Flag}, HOTKEY_LOADBRANCH_BACKTRACK, "Load Backtrack Branch"});
     hotkey_list.push_back({{SingleInput::IT_NONE, 0}, HOTKEY_TOGGLE_ENCODE, "Toggle encode"});
     hotkey_list.push_back({{SingleInput::IT_NONE, 0}, HOTKEY_CALIBRATE_MOUSE, "Calibrate Mouse"});
 
@@ -238,7 +248,7 @@ void KeyMapping::init(xcb_connection_t* conn)
     default_inputs();
 }
 
-std::string KeyMapping::input_description(KeySym ks)
+std::string KeyMapping::input_description(xcb_keysym_t ks)
 {
     for (auto iter : input_list) {
         if (iter.type == SingleInput::IT_KEYBOARD) {
@@ -306,7 +316,7 @@ void KeyMapping::default_input(int input_index)
         input_mapping[si.value] = si;
 }
 
-void KeyMapping::reassign_hotkey(int hotkey_index, KeySym ks)
+void KeyMapping::reassign_hotkey(int hotkey_index, xcb_keysym_t ks)
 {
     /* Hotkey selected */
     HotKey hk = hotkey_list[hotkey_index];
@@ -323,7 +333,7 @@ void KeyMapping::reassign_hotkey(int hotkey_index, KeySym ks)
         hotkey_mapping[ks] = hk;
 }
 
-void KeyMapping::reassign_input(int input_index, KeySym ks)
+void KeyMapping::reassign_input(int input_index, xcb_keysym_t ks)
 {
     /* Input selected */
     SingleInput si = input_list[input_index];

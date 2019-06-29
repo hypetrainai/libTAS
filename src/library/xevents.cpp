@@ -17,10 +17,12 @@
     along with libTAS.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "config.h"
 #include "xevents.h"
 #include "logging.h"
 #include "hook.h"
 #include "XlibEventQueue.h"
+#include "xatom.h"
 
 #ifdef LIBTAS_HAS_XINPUT
 #include <X11/extensions/XInput2.h>
@@ -41,6 +43,7 @@ DEFINE_ORIG_POINTER(XCheckTypedWindowEvent);
 DEFINE_ORIG_POINTER(XEventsQueued);
 DEFINE_ORIG_POINTER(XPending);
 DEFINE_ORIG_POINTER(XSendEvent);
+DEFINE_ORIG_POINTER(XFlush);
 DEFINE_ORIG_POINTER(XSync);
 DEFINE_ORIG_POINTER(XGetEventData);
 DEFINE_ORIG_POINTER(XFreeEventData);
@@ -59,9 +62,22 @@ static Bool isEventFiltered (XEvent *event) {
         case Expose:
         case EnterNotify:
         case LeaveNotify:
-        case PropertyNotify:
+        // case PropertyNotify:
+        /* TODO: Re-enable this to filter unfocus events, but we must unfilter
+         * this as Wine is looking for an event with WM_STATE atom */
         case ReparentNotify:
             return True;
+        case ConfigureNotify:
+            {
+                XConfigureEvent* xce = reinterpret_cast<XConfigureEvent*>(event);
+                xce->x = 0;
+                xce->y = 0;
+            }
+            return False;
+        case ClientMessage:
+            if (static_cast<Atom>(reinterpret_cast<XClientMessageEvent*>(event)->data.l[0]) == x11_atom(WM_TAKE_FOCUS))
+                return True;
+            return False;
         default:
             return False;
     }
@@ -69,21 +85,23 @@ static Bool isEventFiltered (XEvent *event) {
 
 void pushNativeXlibEvents(void)
 {
+    if (shared_config.debug_state & SharedConfig::DEBUG_NATIVE_EVENTS) {
+        return;
+    }
+
     LINK_NAMESPACE_GLOBAL(XPending);
     LINK_NAMESPACE_GLOBAL(XNextEvent);
-    LINK_NAMESPACE_GLOBAL(XSync);
 
     for (int i=0; i<GAMEDISPLAYNUM; i++) {
         if (gameDisplays[i]) {
-            XSync(gameDisplays[i], False);
+            NATIVECALL(XSync(gameDisplays[i], False));
             while (orig::XPending(gameDisplays[i]) > 0) {
                 XEvent event;
                 orig::XNextEvent(gameDisplays[i], &event);
 
                 /* Catch the close event */
                 if (event.type == ClientMessage) {
-                    static Atom dwAtom = XInternAtom(gameDisplays[i], "WM_DELETE_WINDOW", False);
-                    if ((Atom) event.xclient.data.l[0] == dwAtom) {
+                    if ((Atom) event.xclient.data.l[0] == x11_atom(WM_DELETE_WINDOW)) {
                         debuglog(LCF_EVENTS | LCF_WINDOW, "    caught a window close event");
                         is_exiting = true;
                     }
@@ -113,6 +131,34 @@ bool syncXEvents()
     } while (count > 0);
 
     return true;
+}
+
+void answerPingMessage()
+{
+    LINK_NAMESPACE_GLOBAL(XCheckIfEvent);
+    XEvent event;
+    for (int i=0; i<GAMEDISPLAYNUM; i++) {
+        if (gameDisplays[i]) {
+            int ret = orig::XCheckIfEvent(gameDisplays[i], &event, [](Display *display, XEvent *ev, XPointer arg) {
+                if (ev->type == ClientMessage) {
+                    if ((ev->xclient.message_type == x11_atom(WM_PROTOCOLS)) &&
+                        (static_cast<Atom>(ev->xclient.data.l[0]) == x11_atom(_NET_WM_PING))) {
+                        return True;
+                    }
+                }
+                return False;
+            }, nullptr);
+
+            if (ret == True) {
+                debuglog(LCF_EVENTS | LCF_WINDOW, "Answering a ping message");
+                XEvent reply = event;
+                reply.xclient.window = DefaultRootWindow(gameDisplays[i]);
+                NATIVECALL(XSendEvent(gameDisplays[i], DefaultRootWindow(gameDisplays[i]), False,
+                    SubstructureNotifyMask | SubstructureRedirectMask, &reply));
+            }
+
+        }
+    }
 }
 
 
@@ -300,6 +346,9 @@ int XEventsQueued(Display* display, int mode)
 
     int ret = xlibEventQueue.size();
     debuglog(LCF_EVENTS, "    returns ", ret);
+    if ((ret == 0) && (mode != QueuedAlready))
+        pushNativeXlibEvents();
+
     return ret;
 }
 
@@ -314,6 +363,8 @@ int XPending(Display *display)
 
     int ret = xlibEventQueue.size();
     debuglog(LCF_EVENTS, "    returns ", ret);
+    if (ret == 0)
+        pushNativeXlibEvents();
     return ret;
 }
 
@@ -357,16 +408,17 @@ Bool XCheckIfEvent(Display *display, XEvent *event_return, Bool (*predicate)(Dis
 Status XSendEvent(Display *display, Window w, Bool propagate, long event_mask, XEvent *event_send)
 {
     LINK_NAMESPACE_GLOBAL(XSendEvent);
+
+    if (GlobalState::isNative())
+        return orig::XSendEvent(display, w, propagate, event_mask, event_send);
+
     DEBUGLOGCALL(LCF_EVENTS);
 
     /* Detect and disable fullscreen switching */
     if (event_send->type == ClientMessage) {
-        static Atom state = XInternAtom(display, "_NET_WM_STATE", True);
-        static Atom state_fullscreen = XInternAtom(display, "_NET_WM_STATE_FULLSCREEN", True);
-
-        if ((event_send->xclient.message_type == state) &&
+        if ((event_send->xclient.message_type == x11_atom(_NET_WM_STATE)) &&
             (event_send->xclient.data.l[0] == 1) &&
-            (event_send->xclient.data.l[1] == state_fullscreen)) {
+            (static_cast<Atom>(event_send->xclient.data.l[1]) == x11_atom(_NET_WM_STATE_FULLSCREEN))) {
             debuglog(LCF_EVENTS | LCF_WINDOW, "   prevented fullscreen switching but resized the window");
             if (event_send->xclient.window != gameXWindow) {
                 debuglog(LCF_EVENTS | LCF_WINDOW | LCF_WARNING, "   fullscreen window is not game window!");
@@ -377,6 +429,32 @@ Status XSendEvent(Display *display, Window w, Bool propagate, long event_mask, X
     }
 
     return orig::XSendEvent(display, w, propagate, event_mask, event_send);
+}
+
+int XFlush(Display *display)
+{
+    DEBUGLOGCALL(LCF_EVENTS);
+
+    if (shared_config.debug_state & SharedConfig::DEBUG_NATIVE_EVENTS) {
+        LINK_NAMESPACE_GLOBAL(XFlush);
+        return orig::XFlush(display);
+    }
+
+    pushNativeXlibEvents();
+    return 0;
+}
+
+int XSync(Display *display, Bool discard)
+{
+    LINK_NAMESPACE_GLOBAL(XSync);
+    if (GlobalState::isNative() || (shared_config.debug_state & SharedConfig::DEBUG_NATIVE_EVENTS))
+        return orig::XSync(display, discard);
+
+    DEBUGLOGCALL(LCF_EVENTS);
+
+    int ret = orig::XSync(display, discard);
+    pushNativeXlibEvents();
+    return ret;
 }
 
 Bool XGetEventData(Display* dpy, XGenericEventCookie* cookie)

@@ -21,6 +21,7 @@
 
 // #include "ui/MainWindow.h"
 
+#include "config.h"
 #include "GameLoop.h"
 #include "utils.h"
 #include "AutoSave.h"
@@ -114,6 +115,19 @@ void launchGameThread(
             break;
     }
 
+    /* Change settings based on game arch */
+    int gameArch = extractBinaryType(gamepath);
+    int libtasArch = extractBinaryType(libtaspath);
+
+    /* Switch to libtas32.so if required */
+    if (((gameArch == BT_ELF32) || (gameArch == BT_PE32)) && (libtasArch == BT_ELF64)) {
+        std::string libname("libtas.so");
+        size_t pos = libtaspath.find(libname);
+        libtaspath.replace(pos, libname.length(), "libtas32.so");
+        /* libtas32.so presence was already checked in ui/ErrorChecking.cpp */
+        libtasArch = extractBinaryType(libtaspath);
+    }
+
     /* Set additional environment variables regarding Mesa configuration */
     if (opengl_soft)
         setenv("LIBGL_ALWAYS_SOFTWARE", "1", 1);
@@ -129,6 +143,7 @@ void launchGameThread(
     setenv("SDL_DYNAMIC_API", libtaspath.c_str(), 1);
 
     setenv("LIBTAS_START_FRAME", std::to_string(startframe).c_str(), 1);
+
 
     /* Disable Address Space Layout Randomization for the game, so that ram
      * watch addresses do not change on game restart.
@@ -173,7 +188,39 @@ void launchGameThread(
         /* Set the LD_PRELOAD environment variable to inject our lib to the game */
         setenv("LD_PRELOAD", libtaspath.c_str(), 1);
     }
-    arg_list.push_back(gamepath);
+
+    /* Detect Windows executables and launch wine */
+    if ((gameArch == BT_PE32) || (gameArch == BT_PE32P)) {
+        /* Change the executable to wine */
+        std::string winename = "wine";
+        if (gameArch == BT_PE32P)
+            winename += "64";
+
+        /* wine[64] presence was already checked in ui/ErrorChecking.cpp */
+        std::string cmd = "which ";
+        cmd += winename;
+        FILE *output = popen(cmd.c_str(), "r");
+        if (output != NULL) {
+            std::array<char,256> buf;
+            if (fgets(buf.data(), buf.size(), output) != 0) {
+                std::string winepath = std::string(buf.data());
+                winepath.pop_back(); // remove trailing newline
+                arg_list.push_back(winepath);
+            }
+            pclose(output);
+        }
+
+        /* Push the game executable as the first command-line argument */
+        /* Wine can fail if not specifying a Windows path */
+        gamepath.insert(0, "Z:");
+        arg_list.push_back(gamepath);
+
+        /* We need to delay libtas hooking for wine process. */
+        setenv("LIBTAS_DELAY_INIT", "1", 1);
+    }
+    else {
+        arg_list.push_back(gamepath);
+    }
 
     /* Parse the game command-line arguments */
     std::istringstream iss(gameargs);
@@ -407,8 +454,10 @@ void GameLoop::init()
     }
 
     /* Set the current time to the initial time, except when restarting */
-    if (context->status != Context::RESTARTING)
-        context->current_time = context->config.sc.initial_time;
+    if (context->status != Context::RESTARTING) {
+        context->current_time_sec = context->config.sc.initial_time_sec;
+        context->current_time_nsec = context->config.sc.initial_time_nsec;
+    }
 
     pointer_offset_x = 0;
     pointer_offset_y = 0;
@@ -439,6 +488,20 @@ void GameLoop::initProcessMessages()
                 receiveData(&context->game_pid, sizeof(pid_t));
                 break;
 
+            case MSGB_GIT_COMMIT:
+                {
+                    std::string lib_commit = receiveString();
+#ifdef LIBTAS_INTERIM_COMMIT
+                    std::string gui_commit = LIBTAS_INTERIM_COMMIT;
+                    if (lib_commit.compare(gui_commit) != 0) {
+                        std::cerr << "Interim commit of GUI (" << gui_commit << ") does not match commit of library (" << lib_commit << ")!" << std::endl;
+                    }
+#else
+                    std::cerr << "Library has interim commit (" << lib_commit << ") but not GUI!" << std::endl;
+#endif
+                }
+                break;
+
             default:
                 // ui_print("Message init: unknown message\n");
                 loopExit();
@@ -453,11 +516,13 @@ void GameLoop::initProcessMessages()
 
     /* This is a bit hackish, change the initial time to the current time before
      * sending so that the game gets the correct time after restarting. */
-    struct timespec it = context->config.sc.initial_time;
-    context->config.sc.initial_time = context->current_time;
+    struct timespec it = {context->config.sc.initial_time_sec, context->config.sc.initial_time_nsec};
+    context->config.sc.initial_time_sec = context->current_time_sec;
+    context->config.sc.initial_time_nsec = context->current_time_nsec;
     sendMessage(MSGN_CONFIG);
     sendData(&context->config.sc, sizeof(SharedConfig));
-    context->config.sc.initial_time = it;
+    context->config.sc.initial_time_sec = it.tv_sec;
+    context->config.sc.initial_time_nsec = it.tv_nsec;
 
     /* Send dump file if dumping from the beginning */
     if (context->config.sc.av_dumping) {
@@ -503,7 +568,10 @@ bool GameLoop::startFrameMessages()
         float fps, lfps;
         switch (message) {
         case MSGB_WINDOW_ID:
-            receiveData(&context->game_window, sizeof(Window));
+        {
+            uint32_t int_window;
+            receiveData(&int_window, sizeof(uint32_t));
+            context->game_window = (Window)int_window;
             if (context->game_window != 0)
             {
                 const static uint32_t values[] = { XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_KEY_RELEASE | XCB_EVENT_MASK_FOCUS_CHANGE | XCB_EVENT_MASK_EXPOSURE };
@@ -514,6 +582,7 @@ bool GameLoop::startFrameMessages()
                 }
             }
             break;
+        }
 
         case MSGB_ALERT_MSG:
             /* Ask the UI thread to display the alert. He is in charge of
@@ -527,11 +596,12 @@ bool GameLoop::startFrameMessages()
             emit sharedConfigChanged();
             break;
         case MSGB_FRAMECOUNT_TIME:
-            receiveData(&context->framecount, sizeof(unsigned long));
+            receiveData(&context->framecount, sizeof(uint64_t));
             if (context->config.sc.recording == SharedConfig::RECORDING_WRITE) {
                 context->config.sc.movie_framecount = context->framecount;
             }
-            receiveData(&context->current_time, sizeof(struct timespec));
+            receiveData(&context->current_time_sec, sizeof(uint64_t));
+            receiveData(&context->current_time_nsec, sizeof(uint64_t));
             emit frameCountChanged();
             break;
         case MSGB_GAMEINFO:
@@ -877,6 +947,16 @@ bool GameLoop::processEvent(uint8_t type, struct HotKey &hk)
         case HOTKEY_LOADSTATE8:
         case HOTKEY_LOADSTATE9:
         case HOTKEY_LOADSTATE_BACKTRACK:
+        case HOTKEY_LOADBRANCH1:
+        case HOTKEY_LOADBRANCH2:
+        case HOTKEY_LOADBRANCH3:
+        case HOTKEY_LOADBRANCH4:
+        case HOTKEY_LOADBRANCH5:
+        case HOTKEY_LOADBRANCH6:
+        case HOTKEY_LOADBRANCH7:
+        case HOTKEY_LOADBRANCH8:
+        case HOTKEY_LOADBRANCH9:
+        case HOTKEY_LOADBRANCH_BACKTRACK:
 
             /* Load a savestate:
              * - check for an existing savestate in the slot
@@ -897,8 +977,11 @@ bool GameLoop::processEvent(uint8_t type, struct HotKey &hk)
                 return false;
             }
 
+            /* Loading branch? */
+            bool load_branch = (hk.type >= HOTKEY_LOADBRANCH1) && (hk.type <= HOTKEY_LOADBRANCH_BACKTRACK);
+
             /* Slot number */
-            int statei = hk.type - HOTKEY_LOADSTATE1 + 1;
+            int statei = hk.type - (load_branch?HOTKEY_LOADBRANCH1:HOTKEY_LOADSTATE1) + 1;
 
             /* Send the savestate index */
             sendMessage(MSGN_SAVESTATE_INDEX);
@@ -986,8 +1069,8 @@ bool GameLoop::processEvent(uint8_t type, struct HotKey &hk)
             }
 
 
-            /* When loading in read mode, we don't allow loading a non-prefix movie */
-            if (context->config.sc.recording == SharedConfig::RECORDING_READ) {
+            /* When loading in read mode and not branch, we don't allow loading a non-prefix movie */
+            if ((context->config.sc.recording == SharedConfig::RECORDING_READ) && (!load_branch)) {
 
                 /* Checking if the savestate movie is a prefix of our movie */
                 MovieFile savedmovie(context);
@@ -1012,11 +1095,13 @@ bool GameLoop::processEvent(uint8_t type, struct HotKey &hk)
 
             if (context->config.sc.osd & SharedConfig::OSD_MESSAGES) {
                 std::string msg;
-                if (hk.type == HOTKEY_LOADSTATE_BACKTRACK) {
-                    msg = "Loading backtrack state ";
+                if ((hk.type == HOTKEY_LOADSTATE_BACKTRACK) || (hk.type == HOTKEY_LOADBRANCH_BACKTRACK)) {
+                    msg = "Loading backtrack ";
+                    msg += load_branch?"branch ":"state ";
                 }
                 else {
-                    msg = "Loading state ";
+                    msg = "Loading ";
+                    msg += load_branch?"branch ":"state ";
                     msg += std::to_string(statei);
                 }
                 sendMessage(MSGN_OSD_MSG);
@@ -1041,9 +1126,9 @@ bool GameLoop::processEvent(uint8_t type, struct HotKey &hk)
                 sendMessage(MSGN_CONFIG);
                 sendData(&context->config.sc, sizeof(SharedConfig));
 
-                if (context->config.sc.recording == SharedConfig::RECORDING_WRITE) {
-                    /* When in writing move, we load the movie associated
-                     * with the savestate.
+                if ((context->config.sc.recording == SharedConfig::RECORDING_WRITE) || load_branch) {
+                    /* When in writing move or loading a branch,
+                     * we load the movie associated with the savestate.
                      */
                     movie.loadInputs(moviepath);
                 }
@@ -1071,22 +1156,23 @@ bool GameLoop::processEvent(uint8_t type, struct HotKey &hk)
 
                 return false;
             }
-            receiveData(&context->framecount, sizeof(unsigned long));
+            receiveData(&context->framecount, sizeof(uint64_t));
             if (context->config.sc.recording == SharedConfig::RECORDING_WRITE) {
                 context->config.sc.movie_framecount = context->framecount;
             }
-            receiveData(&context->current_time, sizeof(struct timespec));
+            receiveData(&context->current_time_sec, sizeof(uint64_t));
+            receiveData(&context->current_time_nsec, sizeof(uint64_t));
 
             emit inputsChanged();
             emit frameCountChanged();
 
             if (didLoad && (context->config.sc.osd & SharedConfig::OSD_MESSAGES)) {
                 std::string msg;
-                if (hk.type == HOTKEY_LOADSTATE_BACKTRACK) {
-                    msg = "Backtrack state loaded";
+                if ((hk.type == HOTKEY_LOADSTATE_BACKTRACK) || (hk.type == HOTKEY_LOADBRANCH_BACKTRACK)) {
+                    msg = load_branch?"Backtrack branch loaded":"Backtrack state loaded";
                 }
                 else {
-                    msg = "State ";
+                    msg = load_branch?"Branch ":"State ";
                     msg += std::to_string(statei);
                     msg += " loaded";
                 }

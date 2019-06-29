@@ -52,6 +52,8 @@ DEFINE_ORIG_POINTER(pthread_cancel);
 DEFINE_ORIG_POINTER(pthread_testcancel);
 DEFINE_ORIG_POINTER(sem_timedwait);
 DEFINE_ORIG_POINTER(sem_trywait);
+DEFINE_ORIG_POINTER(pthread_attr_setstack);
+
 
 /* We create a specific exception for thread exit calls */
 class ThreadExitException {
@@ -109,7 +111,7 @@ static void *pthread_start(void *arg)
              * the execution past the routine, so we are using the exception
              * feature for that.
              */
-            void *ret;
+            void *ret = nullptr;
             try {
                 /* Execute the function */
                 ret = thread->start(thread->arg);
@@ -169,8 +171,12 @@ static void *pthread_start(void *arg)
 
 /* Override */ int pthread_create (pthread_t * tid_p, const pthread_attr_t * attr, void * (* start_routine) (void *), void * arg) throw()
 {
-    debuglog(LCF_THREAD, "Thread is created with routine ", (void*)start_routine);
     LINK_NAMESPACE(pthread_create, "pthread");
+
+    if (GlobalState::isNative())
+        return orig::pthread_create(tid_p, attr, start_routine, arg);
+
+    debuglog(LCF_THREAD, "Thread is created with routine ", (void*)start_routine);
 
     ThreadSync::wrapperExecutionLockLock();
     ThreadSync::incrementUninitializedThreadCount();
@@ -215,6 +221,10 @@ static void *pthread_start(void *arg)
 /* Override */ void pthread_exit (void *retval)
 {
     LINK_NAMESPACE(pthread_exit, "pthread");
+
+    if (GlobalState::isNative())
+        return orig::pthread_exit(retval);
+
     debuglog(LCF_THREAD, "Thread has exited.");
 
     if (shared_config.recycle_threads) {
@@ -240,7 +250,7 @@ static void *pthread_start(void *arg)
     ThreadSync::wrapperExecutionLockLock();
     ThreadSync::waitForThreadsToFinishInitialization();
 
-    debuglog(LCF_THREAD, "Joining thread ", ThreadManager::getThreadTid(pthread_id));
+    debuglog(LCF_THREAD, "Joining thread id ", pthread_id, " tid " , ThreadManager::getThreadTid(pthread_id));
 
     ThreadInfo* thread = ThreadManager::getThread(pthread_id);
 
@@ -281,7 +291,7 @@ static void *pthread_start(void *arg)
     ThreadSync::wrapperExecutionLockLock();
     ThreadSync::waitForThreadsToFinishInitialization();
 
-    debuglog(LCF_THREAD, "Detaching thread ", ThreadManager::getThreadTid(pthread_id));
+    debuglog(LCF_THREAD, "Detaching thread id ", pthread_id, " tid ", ThreadManager::getThreadTid(pthread_id));
     ThreadInfo* thread = ThreadManager::getThread(pthread_id);
 
     if (!thread) {
@@ -545,6 +555,19 @@ int sem_trywait (sem_t *sem) throw()
 
     DEBUGLOGCALL(LCF_THREAD | LCF_TODO);
     return orig::sem_trywait(sem);
+}
+
+int pthread_attr_setstack(pthread_attr_t *attr, void *stackaddr, size_t stacksize)
+{
+    LINK_NAMESPACE(pthread_attr_setstack, "pthread");
+    if (GlobalState::isNative())
+        return orig::pthread_attr_setstack(attr, stackaddr, stacksize);
+
+    debuglog(LCF_THREAD, __func__, " called with addr ", stackaddr, " and size ", stacksize);
+    // int ret = orig::pthread_attr_setstack(attr, stackaddr, stacksize);
+    // debuglog(LCF_THREAD, "  returns ", ret);
+    // return ret;
+    return 0;
 }
 
 }

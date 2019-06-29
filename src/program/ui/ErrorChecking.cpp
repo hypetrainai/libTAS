@@ -20,6 +20,7 @@
 #include <QMessageBox>
 
 #include "ErrorChecking.h"
+#include "../utils.h"
 #include <unistd.h>
 #include <sys/stat.h>
 
@@ -36,7 +37,7 @@ bool ErrorChecking::allChecks(Context* context)
         if (!checkMovieWriteable(context->config.moviefile))
             return false;
 
-    if (!checkArchType(context->gamepath, context->libtaspath))
+    if (!checkArchType(context))
         return false;
 
     return true;
@@ -47,12 +48,6 @@ bool ErrorChecking::checkGameExists(std::string gamepath)
     /* Checking that the game binary exists */
     if (access(gamepath.c_str(), F_OK) != 0) {
         QMessageBox::critical(nullptr, "Error", QString("Game path %1 was not found").arg(gamepath.c_str()));
-        return false;
-    }
-
-    /* Checking that the game can be executed by the user */
-    if (access(gamepath.c_str(), X_OK) != 0) {
-        QMessageBox::critical(nullptr, "Error", QString("Game %1 is not executable by the user").arg(gamepath.c_str()));
         return false;
     }
 
@@ -118,69 +113,80 @@ bool ErrorChecking::checkMovieWriteable(std::string moviepath)
     return true;
 }
 
-/* Run the `file` command from a shell and extract the output of the command.
- * Returns -1 if the command could not be executed.
- * Returns 32 if the beginning of the output is ELF 32-bit.
- * Returns 64 if the beginning of the output is ELF 64-bit.
- * Otherwise, returns 0
- */
-static int extractFileArch(std::string path)
-{
-    std::string cmd = "file -b \"";
-    cmd += path;
-    cmd += "\"";
-
-    std::string outputstr("");
-
-    FILE *output = popen(cmd.c_str(), "r");
-    if (output != NULL) {
-        std::array<char,1000> buf;
-        if (fgets(buf.data(), buf.size(), output) != 0) {
-            outputstr = std::string(buf.data());
-        }
-        pclose(output);
-    }
-
-    if (outputstr.empty()) {
-        QMessageBox::critical(nullptr, "Error", QString("Could not call `file` command on %1").arg(path.c_str()));
-        return -1;
-    }
-
-    if (outputstr.compare(0, 10, "ELF 64-bit") == 0) {
-        return 64;
-    }
-
-    if (outputstr.compare(0, 10, "ELF 32-bit") == 0) {
-        return 32;
-    }
-
-    QMessageBox::critical(nullptr, "Error", QString("Could not determine arch of file %1 based on the `file` command output\nFull output: %2").arg(path.c_str()).arg(outputstr.c_str()));
-    return 0;
-}
-
-bool ErrorChecking::checkArchType(std::string gamepath, std::string libtaspath)
+bool ErrorChecking::checkArchType(Context* context)
 {
     /* Checking that the game binary exists (again) */
-    if (access(gamepath.c_str(), F_OK) != 0) {
-        QMessageBox::critical(nullptr, "Error", QString("Game path %1 was not found").arg(gamepath.c_str()));
+    if (access(context->gamepath.c_str(), F_OK) != 0) {
+        QMessageBox::critical(nullptr, "Error", QString("Game path %1 was not found").arg(context->gamepath.c_str()));
         return false;
     }
 
     /* Checking that the libtas.so library path is correct */
-    if (access(libtaspath.c_str(), F_OK) != 0) {
-        QMessageBox::critical(nullptr, "Error", QString("libtas.so library at %1 was not found. Make sure that the file libtas.so is in the same directory as libTAS file").arg(libtaspath.c_str()));
+    if (access(context->libtaspath.c_str(), F_OK) != 0) {
+        QMessageBox::critical(nullptr, "Error", QString("libtas.so library at %1 was not found. Make sure that the file libtas.so is in the same directory as libTAS file").arg(context->libtaspath.c_str()));
         return false;
     }
 
-    int gameArch = extractFileArch(gamepath);
-    int libtasArch = extractFileArch(libtaspath);
-
-    if ((gameArch <= 0) || (libtasArch <= 0))
-        /* Alert messages where already prompted in the extractFileArch function */
+    int gameArch = extractBinaryType(context->gamepath);
+    if (gameArch <= 0) {
+        QMessageBox::critical(nullptr, "Error", QString("Could not determine arch of file %1").arg(context->gamepath.c_str()));
         return false;
+    }
 
-    if (gameArch != libtasArch) {
-        QMessageBox::critical(nullptr, "Error", QString("libtas.so library was compiled for a %1-bit arch but %2 has a %3-bit arch").arg(libtasArch).arg(gamepath.c_str()).arg(gameArch));
+    int libtasArch = extractBinaryType(context->libtaspath);
+    if (libtasArch <= 0) {
+        QMessageBox::critical(nullptr, "Error", QString("Could not determine arch of file %1").arg(context->libtaspath.c_str()));
+        return false;
+    }
+
+    /* Checking that the game can be executed by the user */
+    if (gameArch != BT_PE32 && gameArch != BT_PE32P && access(context->gamepath.c_str(), X_OK) != 0) {
+        QMessageBox::critical(nullptr, "Error", QString("Game %1 is not executable by the user").arg(context->gamepath.c_str()));
+        return false;
+    }
+
+    /* Check for a possible libtas alternate file */
+    if (((gameArch == BT_ELF32) || (gameArch == BT_PE32)) && (libtasArch == BT_ELF64)) {
+        std::string lib32path = context->libtaspath;
+        std::string libname("libtas.so");
+        size_t pos = context->libtaspath.find(libname);
+        lib32path.replace(pos, libname.length(), "libtas32.so");
+
+        /* Checking that libtas32.so exists */
+        if (access(lib32path.c_str(), F_OK) == 0) {
+            /* Just in case, check the arch */
+            libtasArch = extractBinaryType(lib32path);
+        }
+    }
+
+    /* Check for wine presence in case of Windows executables */
+    if ((gameArch == BT_PE32) || (gameArch == BT_PE32P)) {
+        std::string winename = "wine";
+        if (gameArch == BT_PE32P)
+            winename += "64";
+
+        std::string cmd = "which ";
+        cmd += winename;
+        FILE *output = popen(cmd.c_str(), "r");
+        if (output != NULL) {
+            fseek(output, 0, SEEK_END);
+            long ssize = ftell(output);
+            if (ssize == 0) {
+                QMessageBox::critical(nullptr, "Error", QString("Trying to execute a Windows executable, but %1 cannot be found").arg(winename.c_str()));
+                pclose(output);
+                return false;
+            }
+            pclose(output);
+        }
+        else {
+            QMessageBox::critical(nullptr, "Error", QString("Coundn't popen to locate wine"));
+            return false;
+        }
+    }
+
+    /* Arithmetic on enums is ugly but much shorter */
+    if (gameArch != libtasArch && ((gameArch-2) != libtasArch)) {
+        QMessageBox::critical(nullptr, "Error", QString("libtas.so library was compiled for a %1-bit arch but %2 has a %3-bit arch").arg((libtasArch%2)?64:32).arg(context->gamepath.c_str()).arg((gameArch%2)?64:32));
         return false;
     }
 

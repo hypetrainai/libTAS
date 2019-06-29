@@ -103,7 +103,7 @@ void closeSocket(void)
     close(socket_fd);
 }
 
-void sendData(const void* elem, size_t size)
+void sendData(const void* elem, unsigned int size)
 {
     // printf("(%ld) Send %d\n", std::this_thread::get_id(), size);
     send(socket_fd, elem, size, 0);
@@ -132,12 +132,12 @@ void sendMessage(int message)
 
 void sendString(const std::string& str)
 {
-    size_t str_size = str.size();
-    sendData(&str_size, sizeof(size_t));
+    unsigned int str_size = str.size();
+    sendData(&str_size, sizeof(unsigned int));
     sendData(str.c_str(), str_size);
 }
 
-int receiveData(void* elem, size_t size)
+int receiveData(void* elem, unsigned int size)
 {
     // printf("(%ld) Receive %d\n", std::this_thread::get_id(), size);
     return recv(socket_fd, elem, size, MSG_WAITALL);
@@ -176,10 +176,19 @@ int receiveMessage()
     return msg;
 }
 
+int receiveMessageNonBlocking()
+{
+    int msg;
+    int ret = recv(socket_fd, &msg, sizeof(int), MSG_WAITALL | MSG_DONTWAIT);
+    if (ret < 0)
+        return ret;
+    return msg;
+}
+
 std::string receiveString()
 {
-    size_t str_size;
-    receiveData(&str_size, sizeof(size_t));
+    unsigned int str_size;
+    receiveData(&str_size, sizeof(unsigned int));
 
     /* TODO: There might be a better way to do this...? */
     std::vector<char> buf(str_size, 0x00);
@@ -191,8 +200,8 @@ std::string receiveString()
 
 void receiveCString(char* str)
 {
-    size_t str_size;
-    receiveData(&str_size, sizeof(size_t));
+    unsigned int str_size;
+    receiveData(&str_size, sizeof(unsigned int));
     receiveData(str, str_size);
     str[str_size] = '\0';
 }

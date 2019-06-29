@@ -15,19 +15,36 @@
 
     You should have received a copy of the GNU General Public License
     along with libTAS.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
-    Most of the code taken from DMTCP <http://dmtcp.sourceforge.net/>
-*/
+#include "xinerama.h"
+#ifdef LIBTAS_HAS_XINERAMA
 
-#ifndef LIBTAS_CUSTOMSIGNALS_H
-#define LIBTAS_CUSTOMSIGNALS_H
+#include "hook.h"
+#include "logging.h"
 
 namespace libtas {
-namespace CustomSignals
+
+DEFINE_ORIG_POINTER(XineramaQueryScreens);
+
+XineramaScreenInfo *XineramaQueryScreens(Display *dpy, int *number)
 {
-    void registerHandlers();
-    void restoreHandlers();
-};
+    DEBUGLOGCALL(LCF_WINDOW);
+    
+    if (shared_config.screen_width) {
+        *number = 1;
+        XineramaScreenInfo *info = static_cast<XineramaScreenInfo*>(malloc(sizeof(XineramaScreenInfo)));
+        info->screen_number = 0;
+        info->x_org = 0;
+        info->y_org = 0;
+        info->width = shared_config.screen_width;
+        info->height = shared_config.screen_height;
+        return info;
+    }
+    LINK_NAMESPACE(XineramaQueryScreens, "Xinerama");
+    return orig::XineramaQueryScreens(dpy, number);
+}
+
 }
 
 #endif

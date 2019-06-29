@@ -29,9 +29,6 @@ namespace libtas {
 
 OVERRIDE Bool XQueryExtension(Display* display, const char* name, int* major_opcode_return, int* first_event_return, int* first_error_return);
 
-OVERRIDE Display *XOpenDisplay(const char *display_name);
-OVERRIDE int XCloseDisplay(Display *display);
-
 OVERRIDE Window XCreateWindow(Display *display, Window parent, int x, int y, unsigned int width, unsigned int height, unsigned int border_width, int depth, unsigned int klass, Visual *visual, unsigned long valuemask, XSetWindowAttributes *attributes);
 
 OVERRIDE Window XCreateSimpleWindow(Display *display, Window parent, int x, int y, unsigned int width, unsigned int height, unsigned int border_width, unsigned long border, unsigned long background);
@@ -46,8 +43,6 @@ OVERRIDE int XStoreName(Display *display, Window w, const char *window_name);
 
 OVERRIDE void XSetWMName(Display *display, Window w, XTextProperty *text_prop);
 
-OVERRIDE Atom XInternAtom(Display* display, const char*	atom_name, Bool only_if_exists);
-
 OVERRIDE int XSelectInput(Display *display, Window w, long event_mask);
 
 OVERRIDE int XMoveWindow(Display* display, Window w, int x, int y);
@@ -57,6 +52,12 @@ OVERRIDE int XMoveResizeWindow(Display* display, Window w, int x, int y, unsigne
 OVERRIDE int XResizeWindow(Display* display, Window w, unsigned int width, unsigned int height);
 
 OVERRIDE int XConfigureWindow(Display* display, Window w, unsigned int value_mask, XWindowChanges* values);
+
+OVERRIDE int XChangeProperty(Display* display, Window w, Atom property, Atom type, int format, int mode,const unsigned char* data, int nelements);
+
+OVERRIDE int XSetWMHints(Display* display, Window w, XWMHints* wm_hints);
+
+OVERRIDE Bool XTranslateCoordinates(Display* display, Window src_w, Window dest_w, int src_x, int src_y, int* dest_x_return, int* dest_y_return, Window* child_return);
 
 }
 

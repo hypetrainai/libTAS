@@ -17,9 +17,9 @@
     along with libTAS.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "RenderHUD_GL.h"
 #ifdef LIBTAS_ENABLE_HUD
 
-#include "RenderHUD_GL.h"
 #include "../logging.h"
 #include "../hook.h"
 #include "../ScreenCapture.h"
@@ -102,6 +102,8 @@ void RenderHUD_GL::fini()
 
 void RenderHUD_GL::renderText(const char* text, Color fg_color, Color bg_color, int x, int y)
 {
+    RenderHUD_GL::init();
+    
     LINK_NAMESPACE(glBindTexture, "GL");
     LINK_NAMESPACE(glTexImage2D, "GL");
     LINK_NAMESPACE(glTexParameteri, "GL");

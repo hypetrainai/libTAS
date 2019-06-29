@@ -42,7 +42,7 @@ enum {
 
     /*
      * The game sends the frame number and time
-     * Argument: unsigned long, struct timespec
+     * Argument: 3 uint64_t
      */
     MSGB_FRAMECOUNT_TIME,
 
@@ -232,6 +232,13 @@ enum {
      * Argument: size_t (string length) then char[len]
      */
     MSGN_STEAM_USER_DATA_PATH,
+
+    /*
+     * Send the git commit hash.
+     * Argument: size_t (string length) then char[len]
+     */
+    MSGB_GIT_COMMIT,
+
 };
 
 const std::string MESSAGE_NAMES[] {

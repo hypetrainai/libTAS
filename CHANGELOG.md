@@ -1,13 +1,27 @@
 ## [Unreleased]
 ### Added
+
+* Both 32-bit and 64-bit libtas.so libraries can be installed, and the program
+  will select the correct one depending on the game arch
+* Hook Xinerama for games gathering the monitor resolution
+* Detect Windows executable and transparently call wine on it
+* Add a loadbranch hotkey to load the entire savestate movie in playback mode
+* Prevent the game screen from appearing unresponsive when the game is paused
+* Don't scroll input editor after manual scrolling, until current frame is not visible
+* Prevent monitor resolution change
+* Add border/title on fullscreen window
+* Check that GUI and library git commit match
+
 ### Changed
 
 * Don't require /proc/self/pagemap to exist for savestating
+* Switch to autotools
 
 ### Fixed
 
 * Don't assume heap segments have the same protection
 * Handle when state saving failed
+* Fix insert frame not working after delete frame
 
 ## [1.3.4] - 2019-04-08
 ### Added

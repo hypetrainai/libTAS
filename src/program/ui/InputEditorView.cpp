@@ -19,6 +19,7 @@
 
 #include <QInputDialog>
 #include <QHeaderView>
+#include <QScrollBar>
 
 #include "InputEditorView.h"
 #include "MainWindow.h"
@@ -73,6 +74,9 @@ InputEditorView::InputEditorView(Context* c, QWidget *parent) : QTableView(paren
     /* Vertical header */
     verticalHeader()->setVisible(false);
     verticalHeader()->setDefaultSectionSize(verticalHeader()->minimumSectionSize());
+
+    /* Track vertical scrolling */
+    connect(verticalScrollBar(), &QAbstractSlider::valueChanged, this, &InputEditorView::manualScroll);
 
     /* Main menu */
     setContextMenuPolicy(Qt::CustomContextMenu);
@@ -158,10 +162,26 @@ void InputEditorView::update()
 {
     inputEditorModel->update();
 
-    /* Scroll to make the current frame visible */
-    QModelIndex index = inputEditorModel->index(context->framecount-1, 0);
-    if (index.isValid())
-        scrollTo(index, QAbstractItemView::PositionAtCenter);
+    /* Enable autoscroll if current frame is not visible */
+    int toprow = rowAt(rect().top());
+    int bottomrow = rowAt(rect().bottom());
+    if ((context->framecount >= bottomrow) || (context->framecount < toprow)) {
+        autoScroll = true;
+    }
+
+    /* If autoscroll is enable, scroll to make the current frame visible */
+    if (autoScroll) {
+        /* Place the current frame at about a quarter of the visible frames */
+        int visibleFrames = bottomrow - toprow;
+        int firstVisibleFrame = context->framecount - 1 - visibleFrames/4;
+        if (firstVisibleFrame < 0) firstVisibleFrame = 0;
+
+        /* Scrolling triggers the signal to our manualScroll() slot, which
+         * we don't want, so we disable the connection */
+        disconnect(verticalScrollBar(), &QAbstractSlider::valueChanged, this, &InputEditorView::manualScroll);
+        scrollTo(inputEditorModel->index(firstVisibleFrame, 0), QAbstractItemView::PositionAtTop);
+        connect(verticalScrollBar(), &QAbstractSlider::valueChanged, this, &InputEditorView::manualScroll);
+    }
 }
 
 void InputEditorView::resetInputs()
@@ -294,28 +314,28 @@ void InputEditorView::mainMenu(QPoint pos)
 
 void InputEditorView::insertInput()
 {
-    const QModelIndex index = selectionModel()->currentIndex();
+    const QModelIndexList indexes = selectionModel()->selectedRows();
 
     /* If no row was selected, return */
-    if (!index.isValid())
+    if (indexes.count() == 0)
         return;
 
-    inputEditorModel->insertRows(index.row(), 1);
+    inputEditorModel->insertRows(indexes[0].row(), 1);
 }
 
 void InputEditorView::insertInputs()
 {
-    const QModelIndex index = selectionModel()->currentIndex();
+    const QModelIndexList indexes = selectionModel()->selectedRows();
 
     /* If no row was selected, return */
-    if (!index.isValid())
+    if (indexes.count() == 0)
         return;
 
     bool ok;
     int nbFrames = QInputDialog::getInt(this, tr("Insert frames"), tr("Number of frames to insert: "), 1, 0, 100000, 1, &ok);
 
     if (ok) {
-        inputEditorModel->insertRows(index.row(), nbFrames);
+        inputEditorModel->insertRows(indexes[0].row(), nbFrames);
     }
 }
 
@@ -343,15 +363,15 @@ void InputEditorView::deleteInput()
 
 void InputEditorView::truncateInputs()
 {
-    const QModelIndex index = selectionModel()->currentIndex();
+    const QModelIndexList indexes = selectionModel()->selectedRows();
 
     /* If no row was selected, return */
-    if (!index.isValid())
+    if (indexes.count() == 0)
         return;
 
     int nbRows = inputEditorModel->rowCount();
 
-    inputEditorModel->removeRows(index.row()+1, nbRows-index.row()-1);
+    inputEditorModel->removeRows(indexes[0].row()+1, nbRows-indexes[0].row()-1);
 }
 
 void InputEditorView::clearInput()
@@ -399,34 +419,39 @@ void InputEditorView::cutInputs()
 
 void InputEditorView::pasteInputs()
 {
-    const QModelIndex index = selectionModel()->currentIndex();
+    const QModelIndexList indexes = selectionModel()->selectedRows();
 
     /* If no row was selected, return */
-    if (!index.isValid())
+    if (indexes.count() == 0)
         return;
 
-    int nbFrames = inputEditorModel->pasteInputs(index.row());
+    int nbFrames = inputEditorModel->pasteInputs(indexes[0].row());
 
     /* Select the pasted inputs */
-    QModelIndex top = inputEditorModel->index(index.row(), 0);
-    QModelIndex bottom = inputEditorModel->index(index.row()+nbFrames-1, 0);
+    QModelIndex top = inputEditorModel->index(indexes[0].row(), 0);
+    QModelIndex bottom = inputEditorModel->index(indexes[0].row()+nbFrames-1, 0);
     selectionModel()->clear();
     selectionModel()->select(QItemSelection(top, bottom), QItemSelectionModel::Select | QItemSelectionModel::Rows);
 }
 
 void InputEditorView::pasteInsertInputs()
 {
-    const QModelIndex index = selectionModel()->currentIndex();
+    const QModelIndexList indexes = selectionModel()->selectedRows();
 
     /* If no row was selected, return */
-    if (!index.isValid())
+    if (indexes.count() == 0)
         return;
 
-    int nbFrames = inputEditorModel->pasteInsertInputs(index.row());
+    int nbFrames = inputEditorModel->pasteInsertInputs(indexes[0].row());
 
     /* Select the pasted inputs */
-    QModelIndex top = inputEditorModel->index(index.row(), 0);
-    QModelIndex bottom = inputEditorModel->index(index.row()+nbFrames-1, 0);
+    QModelIndex top = inputEditorModel->index(indexes[0].row(), 0);
+    QModelIndex bottom = inputEditorModel->index(indexes[0].row()+nbFrames-1, 0);
     selectionModel()->clear();
     selectionModel()->select(QItemSelection(top, bottom), QItemSelectionModel::Select | QItemSelectionModel::Rows);
+}
+
+void InputEditorView::manualScroll(int)
+{
+    autoScroll = false;
 }

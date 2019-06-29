@@ -25,6 +25,9 @@
 
 namespace libtas {
 
+OVERRIDE Display *XOpenDisplay(const char *display_name);
+OVERRIDE int XCloseDisplay(Display *display);
+
 OVERRIDE int XDisplayHeight(Display* display, int screen_number);
 OVERRIDE int XDisplayWidth(Display* display, int screen_number);
 

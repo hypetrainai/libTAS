@@ -17,6 +17,7 @@
     along with libTAS.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "config.h"
 #include <QApplication>
 
 #include "ui/MainWindow.h"
@@ -39,10 +40,6 @@
 #include <fcntl.h>
 #include <getopt.h>
 
-
-#define SOCKET_FILENAME "/tmp/libTAS.socket"
-
-// std::vector<std::string> shared_libs;
 Context context;
 
 static void print_usage(void)

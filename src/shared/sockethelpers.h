@@ -40,7 +40,7 @@ void closeSocket(void);
 /* Send data over the socket. Data is stored at the beginning of
  * pointer elem, and has the specified size in bytes.
  */
-void sendData(const void* elem, size_t size);
+void sendData(const void* elem, unsigned int size);
 
 void sendInt(int elem);
 
@@ -57,7 +57,7 @@ void sendString(const std::string& str);
 void sendMessage(int message);
 
 /* Receive data from the socket. Same arguments as sendData() */
-int receiveData(void* elem, size_t size);
+int receiveData(void* elem, unsigned int size);
 
 /* Receive data from the socket. Same arguments as sendData() */
 int receiveArray(unsigned char* elem, int size);
@@ -73,6 +73,9 @@ int receiveULong(unsigned long* elem);
 
 /* Receive a message */
 int receiveMessage();
+
+/* Receive a message or returns -1 if no message available */
+int receiveMessageNonBlocking();
 
 /* Receive a string object from the socket. */
 std::string receiveString();

@@ -34,6 +34,9 @@ void pushNativeXlibEvents(void);
 /* Wait for the xevent queue to become empty (returns true) or timeout (returns false) */
 bool syncXEvents();
 
+/* Answer ping message from the window manager */
+void answerPingMessage();
+
 OVERRIDE int XNextEvent(Display *display, XEvent *event_return);
 OVERRIDE int XPeekEvent(Display *display, XEvent *event_return);
 OVERRIDE int XWindowEvent(Display *display, Window w, long event_mask, XEvent *event_return);
@@ -47,6 +50,9 @@ OVERRIDE int XPending(Display *display);
 OVERRIDE int XIfEvent(Display *display, XEvent *event_return, Bool (*predicate)(Display *, XEvent *, XPointer), XPointer arg);
 OVERRIDE Bool XCheckIfEvent(Display *display, XEvent *event_return, Bool (*predicate)(Display *, XEvent *, XPointer), XPointer arg);
 OVERRIDE Status XSendEvent(Display *display, Window w, Bool propagate, long event_mask, XEvent *event_send);
+
+OVERRIDE int XFlush(Display *display);
+OVERRIDE int XSync(Display *display, Bool discard);
 
 OVERRIDE Bool XGetEventData(Display* dpy, XGenericEventCookie* cookie);
 OVERRIDE void XFreeEventData(Display* dpy, XGenericEventCookie* cookie);

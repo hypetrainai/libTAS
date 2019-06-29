@@ -39,6 +39,7 @@
 #include <sys/stat.h>
 #include <csignal> // kill
 #include <unistd.h> // access
+#include <limits>
 
 MainWindow::MainWindow(Context* c) : QMainWindow(), context(c)
 {
@@ -131,11 +132,11 @@ MainWindow::MainWindow(Context* c) : QMainWindow(), context(c)
     /* Frame count */
     frameCount = new QSpinBox();
     frameCount->setReadOnly(true);
-    frameCount->setMaximum(1000000000);
+    frameCount->setMaximum(std::numeric_limits<int>::max());
 
     movieFrameCount = new QSpinBox();
     movieFrameCount->setReadOnly(true);
-    movieFrameCount->setMaximum(1000000000);
+    movieFrameCount->setMaximum(std::numeric_limits<int>::max());
 
     /* Current/movie length */
     currentLength = new QLabel("Current time: -");
@@ -143,11 +144,11 @@ MainWindow::MainWindow(Context* c) : QMainWindow(), context(c)
 
     /* Frames per second */
     fpsNumField = new QSpinBox();
-    fpsNumField->setMaximum(100000);
+    fpsNumField->setMaximum(std::numeric_limits<int>::max());
     disabledWidgetsOnStart.append(fpsNumField);
 
     fpsDenField = new QSpinBox();
-    fpsDenField->setMaximum(100000);
+    fpsDenField->setMaximum(std::numeric_limits<int>::max());
     disabledWidgetsOnStart.append(fpsDenField);
 
     fpsValues = new QLabel("Current FPS: - / -");
@@ -155,14 +156,14 @@ MainWindow::MainWindow(Context* c) : QMainWindow(), context(c)
     /* Re-record count */
     rerecordCount = new QSpinBox();
     rerecordCount->setReadOnly(true);
-    rerecordCount->setMaximum(1000000000);
+    rerecordCount->setMaximum(std::numeric_limits<int>::max());
 
     /* Initial time */
     initialTimeSec = new QSpinBox();
-    initialTimeSec->setMaximum(1000000000);
+    initialTimeSec->setMaximum(std::numeric_limits<int>::max());
     initialTimeSec->setMinimumWidth(50);
     initialTimeNsec = new QSpinBox();
-    initialTimeNsec->setMaximum(1000000000);
+    initialTimeNsec->setMaximum(std::numeric_limits<int>::max());
     initialTimeNsec->setMinimumWidth(50);
     disabledWidgetsOnStart.append(initialTimeSec);
     disabledWidgetsOnStart.append(initialTimeNsec);
@@ -829,8 +830,8 @@ void MainWindow::updateStatus()
             movieBox->setCheckable(true);
             movieBox->setChecked(context->config.sc.recording != SharedConfig::NO_RECORDING);
 
-            initialTimeSec->setValue(context->config.sc.initial_time.tv_sec);
-            initialTimeNsec->setValue(context->config.sc.initial_time.tv_nsec);
+            initialTimeSec->setValue(context->config.sc.initial_time_sec);
+            initialTimeNsec->setValue(context->config.sc.initial_time_nsec);
 
             if (context->config.sc.av_dumping) {
                 context->config.sc.av_dumping = false;
@@ -952,8 +953,8 @@ void MainWindow::updateFrameCountTime()
     movieFrameCount->setValue(context->config.sc.movie_framecount);
 
     /* Update time */
-    initialTimeSec->setValue(context->current_time.tv_sec);
-    initialTimeNsec->setValue(context->current_time.tv_nsec);
+    initialTimeSec->setValue(context->current_time_sec);
+    initialTimeNsec->setValue(context->current_time_nsec);
 
     /* Update movie time */
     if (context->config.sc.framerate_num > 0) {
@@ -1002,42 +1003,52 @@ void MainWindow::updateInputEditor()
     // }
 }
 
-void MainWindow::setCheckboxesFromMask(const QActionGroup *actionGroup, int value)
-{
-    for (auto& action : actionGroup->actions()) {
-        action->setChecked(value & action->data().toInt());
-    }
-}
+/* Check all checkboxes from a list of actions whose associated flag data
+ * is present in the value
+ */
+#define setCheckboxesFromMask(actionGroup, value)\
+do {\
+    for (auto& action : actionGroup->actions()) {\
+        action->setChecked(value & action->data().toInt());\
+    }\
+} while(false)
 
-void MainWindow::setMaskFromCheckboxes(const QActionGroup *actionGroup, int &value)
-{
-    value = 0;
-    for (const auto& action : actionGroup->actions()) {
-        if (action->isChecked()) {
-            value |= action->data().toInt();
-        }
-    }
-}
+/* For each checkbox of the action group that is checked, set the
+ * corresponding flag in the value.
+ */
+#define setMaskFromCheckboxes(actionGroup, value)\
+do {\
+    value = 0;\
+    for (const auto& action : actionGroup->actions()) {\
+        if (action->isChecked()) {\
+            value |= action->data().toInt();\
+        }\
+    }\
+} while(false)
 
-void MainWindow::setRadioFromList(const QActionGroup *actionGroup, int value)
-{
-    for (auto& action : actionGroup->actions()) {
-        if (value == action->data().toInt()) {
-            action->setChecked(true);
-            return;
-        }
-    }
-}
+/* Check the radio from a list of actions whose associated data is equal
+ * to the value.
+ */
+#define setRadioFromList(actionGroup, value)\
+do {\
+    for (auto& action : actionGroup->actions()) {\
+        if (value == action->data().toInt()) {\
+            action->setChecked(true);\
+            break;\
+        }\
+    }\
+} while(false)
 
-void MainWindow::setListFromRadio(const QActionGroup *actionGroup, int &value)
-{
-    for (const auto& action : actionGroup->actions()) {
-        if (action->isChecked()) {
-            value = action->data().toInt();
-            return;
-        }
-    }
-}
+/* Set the value to the data of the checked radio from the action group. */
+#define setListFromRadio(actionGroup, value)\
+do {\
+    for (const auto& action : actionGroup->actions()) {\
+        if (action->isChecked()) {\
+            value = action->data().toInt();\
+            break;\
+        }\
+    }\
+} while(false)
 
 void MainWindow::updateMovieParams()
 {
@@ -1089,8 +1100,8 @@ void MainWindow::updateUIFromConfig()
     fpsDenField->setValue(context->config.sc.framerate_den);
     authorField->setText(context->authors.c_str());
 
-    initialTimeSec->setValue(context->config.sc.initial_time.tv_sec);
-    initialTimeNsec->setValue(context->config.sc.initial_time.tv_nsec);
+    initialTimeSec->setValue(context->config.sc.initial_time_sec);
+    initialTimeNsec->setValue(context->config.sc.initial_time_nsec);
 
     movieBox->setChecked(!(context->config.sc.recording == SharedConfig::NO_RECORDING));
 
@@ -1182,6 +1193,7 @@ void MainWindow::updateStatusBar()
 
 void MainWindow::slotLaunch()
 {
+
     /* Do we attach gdb ? */
     QPushButton* button = static_cast<QPushButton*>(sender());
     context->attach_gdb = (button == launchGdbButton);
@@ -1198,8 +1210,8 @@ void MainWindow::slotLaunch()
     /* Set a few parameters */
     context->config.sc.framerate_num = fpsNumField->value();
     context->config.sc.framerate_den = fpsDenField->value();
-    context->config.sc.initial_time.tv_sec = initialTimeSec->value();
-    context->config.sc.initial_time.tv_nsec = initialTimeNsec->value();
+    context->config.sc.initial_time_sec = initialTimeSec->value();
+    context->config.sc.initial_time_nsec = initialTimeNsec->value();
 
     setListFromRadio(frequencyGroup, context->config.sc.audio_frequency);
     setListFromRadio(bitDepthGroup, context->config.sc.audio_bitdepth);

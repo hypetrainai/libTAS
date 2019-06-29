@@ -138,7 +138,7 @@ bool Checkpoint::checkCheckpoint()
         return true;
 
     /* Get an estimation of the savestate space */
-    size_t savestate_size = 0;
+    uint64_t savestate_size = 0;
 
     ProcSelfMaps procSelfMaps(ReservedMemory::getAddr(ReservedMemory::PSM_ADDR), ReservedMemory::PSM_SIZE);
 
@@ -162,9 +162,9 @@ bool Checkpoint::checkCheckpoint()
     struct statvfs devData;
     int ret;
     if ((ret = statvfs(savestate_str.c_str(), &devData)) >= 0) {
-        unsigned long available_size = devData.f_bavail * devData.f_bsize;
+        uint64_t available_size = static_cast<uint64_t>(devData.f_bavail) * devData.f_bsize;
         if (savestate_size > available_size) {
-            debuglogstdio(LCF_CHECKPOINT | LCF_ERROR | LCF_ALERT, "Not enough available space to store the savestate");
+            debuglogstdio(LCF_CHECKPOINT | LCF_ERROR | LCF_ALERT, "Not enough available space to store the savestate (s " PRIu64 " / av " PRIu64 ")", savestate_size, available_size);
 #ifdef LIBTAS_ENABLE_HUD
             RenderHUD::insertMessage("Not enough available space to store the savestate");
 #endif
@@ -283,7 +283,7 @@ void Checkpoint::handler(int signum)
     /* Sync all X server connections */
     for (int i=0; i<GAMEDISPLAYNUM; i++) {
         if (gameDisplays[i])
-            XSync(gameDisplays[i], false);
+            NATIVECALL(XSync(gameDisplays[i], false));
     }
 
     if (ThreadManager::restoreInProgress) {
@@ -353,7 +353,7 @@ void Checkpoint::handler(int signum)
                     size_t savestate_size = writeAllAreas(true);
                     NATIVECALL(clock_gettime(CLOCK_MONOTONIC, &new_time));
                     delta_time = new_time - old_time;
-                    debuglogstdio(LCF_INFO, "Saved base state of size %lld in %f seconds", savestate_size, delta_time.tv_sec + ((double)delta_time.tv_nsec) / 1000000000.0);
+                    debuglogstdio(LCF_INFO, "Saved base state of size %zu in %f seconds", savestate_size, delta_time.tv_sec + ((double)delta_time.tv_nsec) / 1000000000.0);
                 }
             }
             else {
@@ -364,7 +364,7 @@ void Checkpoint::handler(int signum)
                     size_t savestate_size = writeAllAreas(true);
                     NATIVECALL(clock_gettime(CLOCK_MONOTONIC, &new_time));
                     delta_time = new_time - old_time;
-                    debuglogstdio(LCF_INFO, "Saved base state of size %lld in %f seconds", savestate_size, delta_time.tv_sec + ((double)delta_time.tv_nsec) / 1000000000.0);
+                    debuglogstdio(LCF_INFO, "Saved base state of size %zu in %f seconds", savestate_size, delta_time.tv_sec + ((double)delta_time.tv_nsec) / 1000000000.0);
                 }
             }
         }
@@ -377,7 +377,7 @@ void Checkpoint::handler(int signum)
         size_t savestate_size = writeAllAreas(false);
         NATIVECALL(clock_gettime(CLOCK_MONOTONIC, &new_time));
         delta_time = new_time - old_time;
-        debuglogstdio(LCF_CHECKPOINT | LCF_INFO, "Saved state %d of size %lld in %f seconds", ss_index, savestate_size, delta_time.tv_sec + ((double)delta_time.tv_nsec) / 1000000000.0);
+        debuglogstdio(LCF_CHECKPOINT | LCF_INFO, "Saved state %d of size %zu in %f seconds", ss_index, savestate_size, delta_time.tv_sec + ((double)delta_time.tv_nsec) / 1000000000.0);
     }
 }
 
@@ -437,7 +437,7 @@ static void readAllAreas()
 {
     SaveState saved_state(pagemappath, pagespath, getPagemapFd(ss_index), getPagesFd(ss_index));
 
-    int spmfd, crfd;
+    int spmfd = -1, crfd = -1;
     if (shared_config.incremental_savestates) {
         NATIVECALL(spmfd = open("/proc/self/pagemap", O_RDONLY));
         MYASSERT(spmfd != -1);
@@ -907,14 +907,14 @@ static size_t writeAllAreas(bool base)
     MYASSERT(pmfd != -1)
     MYASSERT(pfd != -1)
 
-    int spmfd;
+    int spmfd = -1;
     NATIVECALL(spmfd = open("/proc/self/pagemap", O_RDONLY));
     if (shared_config.incremental_savestates) {
         /* We need /proc/self/pagemap for incremental savestates */
         MYASSERT(spmfd != -1);
     }
 
-    int crfd;
+    int crfd = -1;
     if (shared_config.incremental_savestates) {
         NATIVECALL(crfd = open("/proc/self/clear_refs", O_WRONLY));
         MYASSERT(crfd != -1);

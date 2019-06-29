@@ -17,39 +17,18 @@
     along with libTAS.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef LIBTAS_XINERAMA_H_INCL
+#define LIBTAS_XINERAMA_H_INCL
+
 #include "config.h"
-#ifdef LIBTAS_ENABLE_HUD
+#ifdef LIBTAS_HAS_XINERAMA
 
-#ifndef LIBTAS_SURFACEARGB_H_INCL
-#define LIBTAS_SURFACEARGB_H_INCL
-
-#include <cstdint>
-#include <vector>
+#include "global.h"
+#include <X11/extensions/Xinerama.h>
 
 namespace libtas {
-/* Create a simple ARGB surface class that can be used by sdl_ttf,
- * instead of the SDL_Surface struct.
- * This allows to use sdl_ttf without needing any function
- * from the SDL library.
- */
-class SurfaceARGB
-{
-	public:
-		int w, h;
-		int pitch;
-        std::vector<uint32_t> pixels;
 
-        SurfaceARGB(int width, int height);
-
-		void fill(uint32_t color);
-
-        void blit(SurfaceARGB* src, int x, int y);
-};
-
-struct Color
-{
-    uint8_t r, g, b, a;
-};
+OVERRIDE XineramaScreenInfo *XineramaQueryScreens(Display *dpy, int *number);
 
 }
 

@@ -20,6 +20,7 @@
 #ifndef LIBTAS_XRANDR_H_INCL
 #define LIBTAS_XRANDR_H_INCL
 
+#include "config.h"
 #ifdef LIBTAS_HAS_XRANDR
 
 #include "global.h"
@@ -27,7 +28,23 @@
 
 namespace libtas {
 
+OVERRIDE XRRScreenResources *XRRGetScreenResourcesCurrent (Display *dpy, Window window);
+OVERRIDE XRRScreenResources *XRRGetScreenResources (Display *dpy, Window window);
+OVERRIDE void XRRFreeScreenResources (XRRScreenResources *resources);
+
+OVERRIDE XRROutputInfo *XRRGetOutputInfo (Display *dpy, XRRScreenResources *resources, RROutput output);
+OVERRIDE void XRRFreeOutputInfo (XRROutputInfo *outputInfo);
+
 OVERRIDE XRRCrtcInfo *XRRGetCrtcInfo (Display *dpy, XRRScreenResources *resources, RRCrtc crtc);
+OVERRIDE void XRRFreeCrtcInfo (XRRCrtcInfo *crtcInfo);
+
+OVERRIDE Atom *XRRListOutputProperties (Display *dpy, RROutput output, int *nprop);
+
+OVERRIDE Status XRRSetCrtcConfig (Display *dpy, XRRScreenResources *resources, RRCrtc crtc, Time timestamp, int x, int y, RRMode mode, Rotation rotation, RROutput *outputs, int noutputs);
+OVERRIDE Status XRRSetScreenConfig (Display *dpy, XRRScreenConfiguration *config, Drawable draw, int size_index, Rotation rotation, Time timestamp);
+OVERRIDE Status XRRSetScreenConfigAndRate (Display *dpy, XRRScreenConfiguration *config, Drawable draw, int size_index, Rotation rotation, short rate, Time timestamp);
+OVERRIDE void XRRSetScreenSize (Display *dpy, Window window, int width, int height, int mmWidth, int mmHeight);
+
 
 }
 

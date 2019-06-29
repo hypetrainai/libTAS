@@ -17,6 +17,7 @@
     along with libTAS.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "config.h"
 #include "inputevents.h"
 #include "inputs.h"
 #include "keyboard_helper.h"
@@ -354,7 +355,7 @@ void generateControllerEvents(void)
          * in the SDL documentation. The game must then call
          * SDL_[Joystick/GameController]Update to update the joystick state.
          */
-        bool genGC, genJoy = true;
+        bool genGC = true, genJoy = true;
 
         if (game_info.joystick & GameInfo::SDL2) {
             GlobalOwnCode toc;

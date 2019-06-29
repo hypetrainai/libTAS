@@ -17,41 +17,36 @@
     along with libTAS.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "config.h"
-#ifdef LIBTAS_ENABLE_HUD
+#ifndef LIBTAS_XATOM_H_INCL
+#define LIBTAS_XATOM_H_INCL
 
-#ifndef LIBTAS_SURFACEARGB_H_INCL
-#define LIBTAS_SURFACEARGB_H_INCL
-
-#include <cstdint>
-#include <vector>
+#include "global.h"
+#include <X11/Xlib.h>
 
 namespace libtas {
-/* Create a simple ARGB surface class that can be used by sdl_ttf,
- * instead of the SDL_Surface struct.
- * This allows to use sdl_ttf without needing any function
- * from the SDL library.
- */
-class SurfaceARGB
+
+OVERRIDE Atom XInternAtom(Display* display, const char*	atom_name, Bool only_if_exists);
+
+/* atoms */
+
+void initX11Atoms(Display* display);
+
+enum x11_atoms
 {
-	public:
-		int w, h;
-		int pitch;
-        std::vector<uint32_t> pixels;
-
-        SurfaceARGB(int width, int height);
-
-		void fill(uint32_t color);
-
-        void blit(SurfaceARGB* src, int x, int y);
+    XATOM_WM_PROTOCOLS,
+    XATOM_WM_TAKE_FOCUS,
+    XATOM_WM_DELETE_WINDOW,
+    XATOM__NET_WM_STATE,
+    XATOM__NET_WM_STATE_FULLSCREEN,
+    XATOM__NET_WM_PING,
+    XATOM__MOTIF_WM_HINTS,
+    NB_XATOMS
 };
 
-struct Color
-{
-    uint8_t r, g, b, a;
-};
+extern Atom X11Atoms[NB_XATOMS];
+
+#define x11_atom(name) (X11Atoms[XATOM_##name])
 
 }
 
-#endif
 #endif

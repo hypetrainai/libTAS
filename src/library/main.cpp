@@ -33,6 +33,7 @@
 #include "checkpoint/Checkpoint.h"
 #include "audio/AudioContext.h"
 #include "encoding/AVEncoder.h"
+#include "renderhud/RenderHUD.h"
 #include <unistd.h> // getpid()
 #include "frame.h" // framecount
 
@@ -44,8 +45,26 @@ namespace libtas {
 // (implementation at library/steam/isteamuser.cpp)
 void SteamUser_SetUserDataFolder(std::string path);
 
+static bool is_inited = false;
+
 void __attribute__((constructor)) init(void)
 {
+    /* If LIBTAS_DELAY_INIT env variable is > 0, skip initialization and
+     * decrease env variable value */
+    char* delay_str;
+    NATIVECALL(delay_str = getenv("LIBTAS_DELAY_INIT"));
+    if (delay_str && (delay_str[0] > '0')) {
+        delay_str[0] -= 1;
+        setenv("LIBTAS_DELAY_INIT", delay_str, 1);
+        debuglog(LCF_INFO, "Skipping libtas init");
+
+        /* Setting native state so that we interact as little as possible
+         * with the process */
+        GlobalState::setNative(true);
+
+        return;
+    }
+
     /* Hacking `environ` to disable LD_PRELOAD for future processes */
     /* Taken from <https://stackoverflow.com/a/3275799> */
     for (int i=0; environ[i]; i++) {
@@ -64,10 +83,20 @@ void __attribute__((constructor)) init(void)
     /* Send information to the program */
 
     /* Send game process pid */
-    debuglog(LCF_SOCKET, "Send pid to program");
     sendMessage(MSGB_PID);
     pid_t mypid = getpid();
+    debuglogstdio(LCF_SOCKET, "Send pid to program: %d", mypid);
+    /* If I replace with the line below, then wine+SuperMeatBoy crashes on
+     * on startup... */
+    // debuglog(LCF_SOCKET, "Send pid to program: ", mypid);
     sendData(&mypid, sizeof(pid_t));
+
+    /* Send interim commit hash if one */
+#ifdef LIBTAS_INTERIM_COMMIT
+    std::string commit_hash = LIBTAS_INTERIM_COMMIT;
+    sendMessage(MSGB_GIT_COMMIT);
+    sendString(commit_hash);
+#endif
 
     /* End message */
     sendMessage(MSGB_END_INIT);
@@ -127,17 +156,23 @@ void __attribute__((constructor)) init(void)
 
     /* Initialize sound parameters */
     audiocontext.init();
+
+#ifdef LIBTAS_ENABLE_HUD
+    /* Load HUD fonts */
+    RenderHUD::initFonts();
+#endif
+
+    is_inited = true;
 }
 
 void __attribute__((destructor)) term(void)
 {
-    ThreadManager::deallocateThreads();
-
-    sendMessage(MSGB_QUIT);
-
-    closeSocket();
-
-    debuglog(LCF_SOCKET, "Exiting.");
+    if (is_inited) {
+        ThreadManager::deallocateThreads();
+        sendMessage(MSGB_QUIT);
+        closeSocket();
+        debuglog(LCF_SOCKET, "Exiting.");
+    }
 }
 
 }

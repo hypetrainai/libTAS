@@ -17,6 +17,7 @@
     along with libTAS.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "config.h"
 #ifdef LIBTAS_ENABLE_HUD
 
 #ifndef LIBTAS_RENDERHUD_H_INCL
@@ -50,11 +51,10 @@ namespace libtas {
 class RenderHUD
 {
     public:
-        RenderHUD();
         virtual ~RenderHUD();
 
         /* Initialize the font located at the given path */
-        virtual void initFonts(const char* path);
+        static void initFonts();
 
         /* Main function to render some text on the screen.
          * This function does nothing in this class and must be overridden.
@@ -67,10 +67,10 @@ class RenderHUD
         virtual void renderText(const char* text, Color fg_color, Color bg_color, int x, int y) {};
 
         /* Display the frame count on screen */
-        void renderFrame(unsigned long framecount);
+        void renderFrame(uint64_t framecount);
 
         /* Display nondraw frame count on screen */
-        void renderNonDrawFrame(unsigned long nondraw_framecount);
+        void renderNonDrawFrame(uint64_t nondraw_framecount);
 
         /* Display the inputs on screen */
         void renderInputs(AllInputs& ai);
@@ -110,8 +110,8 @@ class RenderHUD
          * text color */
         void renderInputs(AllInputs& ai, Color fg_color);
 
-        int outline_size;
-        int font_size;
+        static int outline_size;
+        static int font_size;
 
         static TTF_Font* fg_font;
         static TTF_Font* bg_font;

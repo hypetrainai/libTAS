@@ -69,6 +69,16 @@ typedef int HotKeyType; enum
     HOTKEY_LOADSTATE_BACKTRACK,
     HOTKEY_TOGGLE_ENCODE, // Start/stop audio/video encoding
     HOTKEY_CALIBRATE_MOUSE, // Calibrate mouse cursor position
+    HOTKEY_LOADBRANCH1, // Load state and movie
+    HOTKEY_LOADBRANCH2,
+    HOTKEY_LOADBRANCH3,
+    HOTKEY_LOADBRANCH4,
+    HOTKEY_LOADBRANCH5,
+    HOTKEY_LOADBRANCH6,
+    HOTKEY_LOADBRANCH7,
+    HOTKEY_LOADBRANCH8,
+    HOTKEY_LOADBRANCH9,
+    HOTKEY_LOADBRANCH_BACKTRACK,
     HOTKEY_LEN
 };
 
@@ -142,7 +152,7 @@ class KeyMapping {
         std::vector<HotKey> hotkey_list;
 
         /* Get the input description */
-        std::string input_description(KeySym ks);
+        std::string input_description(xcb_keysym_t ks);
 
         /* Set hotkeys to default values */
         void default_hotkeys();
@@ -157,10 +167,10 @@ class KeyMapping {
         void default_input(int input_index);
 
         /* Assign a new key to the hotkey */
-        void reassign_hotkey(int hotkey_index, KeySym ks);
+        void reassign_hotkey(int hotkey_index, xcb_keysym_t ks);
 
         /* Assign a new key to the input */
-        void reassign_input(int input_index, KeySym ks);
+        void reassign_input(int input_index, xcb_keysym_t ks);
 
         /*
          * We are building the whole AllInputs structure,
