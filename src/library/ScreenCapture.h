@@ -32,8 +32,6 @@ namespace ScreenCapture {
  * @return 0 if successful or -1 if an error occured
  */
 int init();
-    
-static unsigned int size;
 
 /* Create the screen buffer/surface/texture */
 void initScreenSurface();

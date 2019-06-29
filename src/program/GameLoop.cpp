@@ -52,10 +52,10 @@
 #endif
 
 void launchGameThread(
-    const std::string& gamepath,
-    const std::string& libtaspath,
+    std::string gamepath,
+    std::string libtaspath,
     const std::string& gameargs,
-    int startframe,
+    uint64_t startframe,
     const std::string& libdir,
     const std::string& rundir,
     int logging_status,

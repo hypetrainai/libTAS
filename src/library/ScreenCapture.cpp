@@ -108,6 +108,8 @@ static SDL_Texture* screenSDLTex = nullptr;
 /* SDL2 renderer if any */
 static SDL_Renderer* sdl_renderer;
 
+static unsigned int size;
+
 int ScreenCapture::init()
 {
     if (inited) {
