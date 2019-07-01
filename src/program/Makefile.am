@@ -14,4 +14,17 @@ libTAS_LDADD = $(QT5_LIBS)
 
 SUFFIXES = .h _moc.cpp
 
-CLEANFILES = $(libTAS_MOCSOURCES)
+BUILT_SOURCES = pylibtas_swig.cpp
+
+AM_CXXFLAGS = -I$(shell $(PYTHON) -c 'import numpy; print(numpy.get_include())')
+pkgpython_PYTHON = pylibtas.py
+pkgpyexec_LTLIBRARIES = _pylibtas.la
+_pylibtas_la_SOURCES = pylibtas_swig.cpp $(libTAS_SOURCES)
+_pylibtas_la_CPPFLAGS = $(AX_SWIG_PYTHON_CPPFLAGS) $(libTAS_CXXFLAGS)
+_pylibtas_la_LDFLAGS = -module
+_pylibtas_la_LIBADD = $(libTAS_LDADD)
+
+pylibtas_swig.cpp : pylibtas.i 
+	$(SWIG) $(AX_SWIG_PYTHON_OPT) -o $@ $<
+
+CLEANFILES = $(libTAS_MOCSOURCES) pylibtas_swig.cpp _pylibtas.so pylibtas.py *.pyc

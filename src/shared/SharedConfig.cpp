@@ -44,7 +44,7 @@ std::ostream& operator<<(std::ostream& os, const SharedConfig& sc)
       << "    SDLGETTICKS: " << sc.sec_gettimes_threshold[sc.TIMETYPE_SDLGETTICKS] << std::endl
       << "    SDLGETPERFORMANCECOUNTER: " << sc.sec_gettimes_threshold[sc.TIMETYPE_SDLGETPERFORMANCECOUNTER] << std::endl
       << "  save_screenpixels: " << sc.save_screenpixels << std::endl
-      << "  initial_time: " << sc.initial_time.tv_sec << " " << sc.initial_time.tv_nsec << std::endl
+      << "  initial_time: " << sc.initial_time_sec << " " << sc.initial_time_nsec << std::endl
       << "  screen_width: " << sc.screen_width << std::endl
       << "  screen_height: " << sc.screen_height << std::endl
       << "  incremental_savestates: " << sc.incremental_savestates << std::endl

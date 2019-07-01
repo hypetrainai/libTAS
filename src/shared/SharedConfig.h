@@ -25,7 +25,11 @@
 #include <ostream>
 #include <cstdint>
 
+#if defined(SWIG)
+struct SharedConfig {
+#else
 struct __attribute__((packed, aligned(8))) SharedConfig {
+#endif
     /* By how much is the speed reduced */
     int speed_divisor = 1;
 

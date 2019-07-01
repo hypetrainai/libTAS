@@ -1,7 +1,9 @@
 dnl **** Initialization ****
 
 AC_INIT([libTAS], [1.3.4], [clement.gallet@ens-lyon.org])
-AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
+AM_INIT_AUTOMAKE([-Wall -Werror -Wno-portability foreign subdir-objects])
+AC_CONFIG_MACRO_DIRS([m4])
+m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 AC_PROG_CXX
 AC_CONFIG_SRCDIR([src/program/main.cpp])
 AC_CONFIG_HEADERS([config.h])
@@ -99,5 +101,11 @@ AS_IF([test "x$enable_release_build" != "xyes"], [
     today=`date +%Y-%m-%d`
     AC_DEFINE_UNQUOTED([LIBTAS_INTERIM_DATE], ["$today"], [Git commit])
 ])
+
+LT_INIT([disable_static])
+AM_PATH_PYTHON(3)
+AX_PKG_SWIG(3.0.10, [], [ AC_MSG_ERROR([SWIG is required to build..]) ])
+AX_SWIG_ENABLE_CXX
+AX_SWIG_PYTHON
 
 AC_OUTPUT

@@ -33,10 +33,10 @@
  * So, it is called from a child process using fork().
  */
 void launchGameThread(
-    const std::string& gamepath,
-    const std::string& libtaspath,
+    std::string gamepath,
+    std::string libtaspath,
     const std::string& gameargs = "",
-    int startframe = 0,
+    uint64_t startframe = 0,
     const std::string& libdir = "",
     const std::string& rundir = "",
     int logging_status = SharedConfig::LOGGING_TO_CONSOLE,
