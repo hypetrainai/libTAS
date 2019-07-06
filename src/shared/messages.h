@@ -277,6 +277,7 @@ const std::string MESSAGE_NAMES[] {
     "MSGN_ENCODING_SEGMENT",
     "MSGB_DO_BACKTRACK_SAVESTATE",
     "MSGN_STEAM_USER_DATA_PATH",
+    "MSGB_GIT_COMMIT",
 };
 
 #endif
