@@ -20,6 +20,8 @@
 #ifndef LIBTAS_MESSAGES_H_INCLUDED
 #define LIBTAS_MESSAGES_H_INCLUDED
 
+#include <string>
+
 /* List of message identification values that is sent from/to the game */
 enum {
     /*
@@ -241,7 +243,7 @@ enum {
 
 };
 
-const std::string MESSAGE_NAMES[] {
+const std::string LIBTAS_MESSAGE_NAMES[] {
     "MSGB_START_FRAMEBOUNDARY",
     "MSGB_FRAME_DATA",
     "MSGN_START_FRAMEBOUNDARY",
@@ -279,5 +281,7 @@ const std::string MESSAGE_NAMES[] {
     "MSGN_STEAM_USER_DATA_PATH",
     "MSGB_GIT_COMMIT",
 };
+
+const std::string message_name(const int id);
 
 #endif

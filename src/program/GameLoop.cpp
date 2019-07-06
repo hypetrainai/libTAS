@@ -267,7 +267,7 @@ void GameLoop::start()
           receiveData(&size, sizeof(int));
           ignoreData(size);
         } else {
-          std::cerr << "Unexpected message " << MESSAGE_NAMES[message] << std::endl;
+          std::cerr << "Unexpected message " << message_name(message) << std::endl;
           loopExit();
           return;
         }

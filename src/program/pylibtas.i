@@ -9,7 +9,18 @@
 #include "GameLoop.h"
 #include "MovieFile.h"
 #define SWIG_FILE_WITH_INIT
+#define SWIGWORDSIZE64
 %}
+
+%init %{
+import_array();
+%}
+
+%include "stdint.i"
+%include "std_string.i"
+%include "std_vector.i"
+%include "typemaps.i"
+%include "numpy.i"
 
 %typemap(in) int [ANY] (int temp[$1_dim0]) {
   int i;
@@ -49,14 +60,6 @@
   }
 }
 
-%include "std_string.i"
-%include "numpy.i"
-
-%init %{
-import_array();
-%}
-
-%include "typemaps.i"
 %include "../shared/AllInputs.h"
 %include "../shared/lcf.h"
 %include "../shared/messages.h"
