@@ -12,4 +12,4 @@ automake --add-missing
 make -j4
 mkdir -p build64
 cp -f src/program/libTAS src/program/pylibtas.py src/program/.libs/_pylibtas.so src/library/.libs/libtas.so build64
-cp -f build64/pylibtas.py build64/_pylibtas.so ..
+cp -f build64/pylibtas.py build64/_pylibtas.so ../..
